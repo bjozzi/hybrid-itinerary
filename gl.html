@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>My Web Map</title>
+    <meta charset="utf-8">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.js'></script>
+<link href='https://api.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.css' rel='stylesheet' />
+
+<script src='https://api.mapbox.com/mapbox.js/v3.0.1/mapbox.js'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+<link href='https://api.mapbox.com/mapbox.js/v3.0.1/mapbox.css' rel='stylesheet' />
+    <style>
+      #map {
+        height: 100%;
+        width: 100%;
+        position: absolute;
+      }
+      html,body{margin: 0; padding: 0;}
+    </style>
+  </head>
+  <body>
+    <div id='map' ></div>
+        <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYmpvenppIiwiYSI6ImNpemgwdmY5ZzAwMzAyd2w5a3IyazdnbmYifQ.XRmGZKXZrM9R3aAxkdmsKQ';
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v9',
+            center: [12.59421196646386, 55.67205000123866],
+            zoom: 14
+        });
+
+var startMarker = null;
+var endMarker = null;
+var img_url = 'img/marker-icon-green.png';
+var iconSize = [25, 41];
+var el = document.createElement('div');
+el.className = 'marker';
+var img = document.createElement('img');
+img.setAttribute("src", img_url);
+el.appendChild(img);
+
+var el1 = document.createElement('div');
+el1.className = 'marker';
+var img1 = document.createElement('img');
+img1.setAttribute("src", img_url);
+el1.appendChild(img1);
+
+        
+    map.on('click',function(e){
+      if(startMarker === null){
+        startMarker = new mapboxgl.Marker(el, {offset: [ -(img.width/2), -(img.height)]})
+        .setLngLat([e.lngLat.lng, e.lngLat.lat])
+        .addTo(map);    
+
+      }else if(endMarker === null){
+        endMarker = new mapboxgl.Marker(el1, {offset: [ -(img.width/2), -(img.height)]})
+        .setLngLat([e.lngLat.lng, e.lngLat.lat])
+        .addTo(map);    
+
+        var coOrd = startMarker.getLngLat().lng +','+startMarker.getLngLat().lat+';'+ endMarker.getLngLat().lng+','+endMarker.getLngLat().lat;
+        var path = 'https://api.mapbox.com/directions/v5/mapbox/cycling/'+coOrd+'?geometries=geojson&access_token=pk.eyJ1IjoiYmpvenppIiwiYSI6ImNpemgwdmY5ZzAwMzAyd2w5a3IyazdnbmYifQ.XRmGZKXZrM9R3aAxkdmsKQ';
+        
+        $.get(path, function(data) {
+            console.log();        
+            drawPath(data.routes[0].geometry);
+        });
+      }
+        
+
+
+      function drawPath(geometry){
+        map.addLayer({
+                "id": "route",
+                "type": "line",
+                "source": {
+                    "type": "geojson",
+                    "data": {
+                        "type": "Feature",
+                        "properties": {},
+                        "geometry": geometry
+                    }
+                },
+                "layout": {
+                    "line-join": "round",
+                    "line-cap": "round"
+                },
+                "paint": {
+                    "line-color": "red",
+                    "line-width": 2
+                }
+            });
+      };
+        
+
+
+
+    });
+
+
+
+
+ /*       var map = new mapboxgl.Map({
+  container: 'map',
+  center: [-122.420679, 37.772537],
+  zoom: 13,
+  style: style_object,
+  hash: true
+});*/
+        </script>
+  </body>
+</html>
