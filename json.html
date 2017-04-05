@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>A simple map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.js"></script>
+
+</head>
+<body>
+<pre id='json'></pre>
+<pre id='slumm'></pre>
+<script>
+var times = [];
+var promises = [];
+var go = function(){
+    var jsonPaths = [];
+
+    for(var i = 1 ; i<24 ; i++){
+        var time = (i%2 == 0) ? i + "%3A30pm" : i + "%3A00pm";
+        jsonPaths.push(time);
+        //console.log(time);
+        
+    }
+    return jsonPaths;
+}
+
+var all = function(array){
+    var deferred = $.Deferred();
+    var fulfilled = 0, length = array.length;
+    var results = [];
+
+    if (length === 0) {
+        deferred.resolve(result00s);
+    } else {
+        array.forEach(function(promise, i){
+            $.when(promise()).then(function(value) {
+                results[i] = value;
+                fulfilled++;
+                if(fulfilled === length){
+                    deferred.resolve(results);
+                }
+            });
+        });
+    }
+
+    return deferred.promise();
+};
+
+times = go();
+times.forEach(function(time) {
+    console.log(time);
+    promises.push(function() {
+        return $.Deferred(function(dfd) {
+            $.get('http://localhost:8080/otp/routers/default/plan?fromPlace=55.64175529688383%2C12.587928771972656&toPlace=55.70738472066833%2C12.584495544433594&time='+ time +'&date=03-20-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en', function(data) {
+               dfd.resolve(data);
+            });
+        }).promise();
+    });
+});
+
+$.when(all(promises)).then(function(results) {
+    console.log(results);
+    var strengur = JSON.stringify(results);
+    console.log(results);
+    document.getElementById("json").innerHTML = strengur;
+    localStorage.setItem('itineries', strengur);
+    var slumm = LZString.compress(strengur);
+    localStorage.setItem('zipped', slumm);
+    console.log("strengur: " + strengur.length);
+    console.log("slumm: " + slumm.length);
+    document.getElementById("slumm").innerHTML = slumm;
+
+
+});
+
+
+</script>
+
+</body>
+</html>

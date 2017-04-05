@@ -61,7 +61,7 @@ el1.appendChild(img1);
         var path = 'https://api.mapbox.com/directions/v5/mapbox/cycling/'+coOrd+'?geometries=geojson&access_token=pk.eyJ1IjoiYmpvenppIiwiYSI6ImNpemgwdmY5ZzAwMzAyd2w5a3IyazdnbmYifQ.XRmGZKXZrM9R3aAxkdmsKQ';
         
         $.get(path, function(data) {
-            console.log();        
+            console.log(data);        
             drawPath(data.routes[0].geometry);
         });
       }

@@ -15,7 +15,7 @@
 <body>
 <div id='map'></div>
 <script>
-if ('serviceWorker' in navigator) {
+/*if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js')
   .then(function(registration) {
     console.log('Registered:', registration);
@@ -23,6 +23,19 @@ if ('serviceWorker' in navigator) {
   .catch(function(error) {
     console.log('Registration failed: ', error);
   });
+}*/
+var jsonPaths = [];
+for(var i = 1 ; i<24 ; i++){
+    var time = i + "%3A30pm";
+    (i%2 == 0) ? i + "%3A30pm" : i + "%3A00pm";
+    console.log(time);
+    var trip = "http://localhost:8080/otp/routers/default/plan?fromPlace=55.64175529688383%2C12.587928771972656&toPlace=55.70738472066833%2C12.584495544433594&time="+ time +"&date=03-20-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en";
+    $.get(trip, function(data) {
+        console.log(data);     
+        jsonPaths.push(data);
+        //data.plan.itineraries[0].legs
+        //L.geoJson(data.routes[0].geometry, {color: 'red'}).addTo(map);
+    });
 }
 
 
@@ -53,13 +66,50 @@ map.on('click', function (e) {
         var path = 'https://api.mapbox.com/directions/v5/mapbox/cycling/'+coOrd+'?geometries=geojson&access_token=pk.eyJ1IjoiYmpvenppIiwiYSI6ImNpemgwdmY5ZzAwMzAyd2w5a3IyazdnbmYifQ.XRmGZKXZrM9R3aAxkdmsKQ';
         //path = 'https://api.mapbox.com/directions/v5/mapbox/driving/13.4301,52.5109;13.4265,52.5080;13.4194,52.5072?radiuses=40;;100&geometries=geojson&access_token=pk.eyJ1IjoiYmpvenppIiwiYSI6ImNpemgwdmY5ZzAwMzAyd2w5a3IyazdnbmYifQ.XRmGZKXZrM9R3aAxkdmsKQ';
         
-        //path = 'http://localhost:8080/otp/routers/default/plan?fromPlace='+startMarker.getLatLng().lng +','+startMarker.getLatLng().lat+'&toPlace='+ endMarker.getLatLng().lng+','+endMarker.getLatLng().lat +'&time=5%3A16pm&date=02-22-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en'
+        var path2 = 'http://localhost:8080/otp/routers/default/plan?fromPlace='+startMarker.getLatLng().lat +','+startMarker.getLatLng().lng+'&toPlace='+ endMarker.getLatLng().lat+','+endMarker.getLatLng().lng +'&time=5%3A16pm&date=03-08-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en'
+        console.log(path);
+        //path = "http://localhost:8080/otp/routers/default/plan?fromPlace=55.63235683233552%2C12.578830718994139&toPlace=55.66194952013165%2C12.589216232299805&time=1%3A07pm&date=03-08-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en";
+        //path = "http://localhost:8080/otp/routers/default/plan?fromPlace=12.579002380371096,55.63187231429297&toPlace=12.589473724365236,55.661997935007946&time=5%3A16pm&date=03-08-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en";
         
+        http://localhost:8080/otp/routers/default/plan?fromPlace=55.628577432715836%2C12.586212158203125&toPlace=55.70854531198258%2C12.581405639648438&time=2%3A28pm&date=03-20-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en
+        http://localhost:8080/otp/routers/default/plan?fromPlace=55.64175529688383%2C12.587928771972656&toPlace=55.70738472066833%2C12.584495544433594&time=2%3A30pm&date=03-20-2017&mode=TRANSIT%2CWALK&maxWalkDistance=804.672&arriveBy=false&wheelchair=false&locale=en
+        
+        
+
+
         
         $.get(path, function(data) {
-            console.log();        
+            console.log(data);        
             //data.plan.itineraries[0].legs
-            L.geoJson(data.routes[0].geometry, {color: 'red'}).addTo(map)
+            //L.geoJson(data.routes[0].geometry, {color: 'red'}).addTo(map);
+        });
+        var a = [];
+        var geometry = {
+            coordinates : [],
+            type : "LineString"
+        };
+
+        $.get(path2, function(data) {
+            console.log(data.plan.itineraries);        
+
+            a = data.plan.itineraries[0].legs;
+            a.forEach(e => {
+                
+                if(e.transitLeg){
+                    geometry.coordinates.push([e.from.lon, e.from.lat]);
+                    geometry.coordinates.push([e.to.lon, e.to.lat]);
+                }else {
+                    e.steps.map( x => {
+                        geometry.coordinates.push([x.lon,x.lat]);
+                    });
+                }
+
+                console.log(e);
+                L.geoJson(geometry, {color: 'red'}).addTo(map)
+            });
+            console.log(geometry);
+            //data.plan.itineraries[0].legs
+            //L.geoJson(data.routes[0].geometry, {color: 'red'}).addTo(map)
         });
         //var polyline = L.polyline(points, {color: 'red'}).addTo(map);
     }

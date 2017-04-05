@@ -45,7 +45,7 @@ public class Main {
                 trip_id = csv.getItem(0);
                 Stop_times st = new Stop_times(csv.getItem(1), csv.getItem(2), csv.getItem(3), Integer.parseInt(csv.getItem(4)), Integer.parseInt(csv.getItem(5)), Integer.parseInt(csv.getItem(6)), csv.getItem(7));
                 if (!StopTimes.containsKey(trip_id))
-                    StopTimes.put(trip_id, new ArrayList<>());
+                    StopTimes.put(trip_id, new ArrayList<Stop_times>());
                 if (!StopTimes.get(trip_id).contains(st.stop_id))
                     StopTimes.get(trip_id).add(st);
             }
