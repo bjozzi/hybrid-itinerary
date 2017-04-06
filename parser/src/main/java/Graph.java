@@ -9,16 +9,16 @@ import java.util.Map;
 public class Graph {
 
     private Map<String, Node> nodes;
-    private Map<String, List<Arc>> adjacentNodes;
+    private Map<String, List<Arc>> adjacentArcs;
 
     public Graph() {
         this.nodes = new HashMap<String, Node>();
-        this.adjacentNodes = new HashMap<String, List<Arc>>();
+        this.adjacentArcs = new HashMap<String, List<Arc>>();
     }
     public void addArc(String sourceID, Arc arc) {
-        if (!adjacentNodes.containsKey(sourceID))
-            adjacentNodes.put(sourceID, new ArrayList<Arc>());
-        adjacentNodes.get(sourceID).add(arc);
+        if (!adjacentArcs.containsKey(sourceID))
+            adjacentArcs.put(sourceID, new ArrayList<Arc>());
+        adjacentArcs.get(sourceID).add(arc);
     }
     public Node getNode(String nodeID)
     {
@@ -27,20 +27,20 @@ public class Graph {
     public Map<String, Node> getNodes() {
         return nodes;
     }
-    public List<Arc> getAdjacentNodes(String nodeID)
+    public List<Arc> getadjacentArc(String nodeID)
     {
-        return adjacentNodes.get(nodeID);
+        return adjacentArcs.get(nodeID);
     }
 
-    public Map<String, List<Arc>> getAdjacentNodes() {
+    public Map<String, List<Arc>> getadjacentArcs() {
 
-        return adjacentNodes;
+        return adjacentArcs;
     }
 
     public void createNode(String ID, float lat, float lng)
     {
         nodes.put(ID,new Node(ID, lat, lng));
-        //adjacentNodes.put(ID, new ArrayList<Arc>());
+        //adjacentArcs.put(ID, new ArrayList<Arc>());
     }
     public void addEdge(String u, String v, double cost)
     {

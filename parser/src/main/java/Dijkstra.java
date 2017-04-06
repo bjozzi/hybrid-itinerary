@@ -76,7 +76,7 @@ public class Dijkstra {
             }
 
             // Discover all adjacent nodes
-            nodeAdjacentArcs = this.graph.getAdjacentNodes(currentNode.getId());
+            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId());
             // int currentLabel = graph.getNode(currentNode.getId()).getLabel();
             if (nodeAdjacentArcs == null)
                 continue;
