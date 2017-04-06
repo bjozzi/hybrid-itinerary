@@ -1,3 +1,5 @@
+package basic;
+
 /**
  * Created by Karlis on 2017.03.23..
  */

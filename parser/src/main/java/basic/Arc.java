@@ -1,5 +1,4 @@
-import java.util.AbstractMap;
-import java.util.Map;
+package basic;
 
 /**
  * Created by Karlis on 2017.03.23..

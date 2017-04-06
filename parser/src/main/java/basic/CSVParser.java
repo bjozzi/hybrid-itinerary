@@ -1,8 +1,6 @@
-import java.io.BufferedReader;
-import java.io.EOFException;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+package basic;
+
+import java.io.*;
 
 /**
  * A simple CSV Parser.
