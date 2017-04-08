@@ -1,4 +1,8 @@
-package basic;
+package TimeDependent;
+
+import basic.ActiveNode;
+import basic.Arc;
+import basic.Graph;
 
 import java.util.*;
 
@@ -6,14 +10,14 @@ import java.util.*;
  * Created by Karlis on 2017.04.05..
  */
 public class TDDijkstra {
-    private Graph graph;
+    private TDDGraph graph;
     private Map<String, Double> visitedNodeMarks;
     private PriorityQueue<ActiveNode> activeNodes;
     private Map<String, ActiveNode> parents;
 
     private Comparator<ActiveNode> activeNodeComparator;
 
-    public TDDijkstra(Graph graph) {
+    public TDDijkstra(TDDGraph graph) {
         this();
         this.graph = graph;
     }
@@ -37,11 +41,11 @@ public class TDDijkstra {
      * @return {@link Double#NEGATIVE_INFINITY} if no shortest path was found,
      * otherwise a value indicating the total cost of the shortest path
      */
-    public double computeShortestPath(String startNodeId, String targetNodeId) {
+    public double computeShortestPath(String startNodeId, String targetNodeId, int startTime) {
 
         this.visitedNodeMarks = new HashMap<String, Double>();
         double shortestPathCost = Double.MAX_VALUE;
-        List<Arc> nodeAdjacentArcs;
+        List<TDArc> nodeAdjacentArcs;
         int numSettledNodes = 0;
         double distToAdjNode;
 
@@ -51,7 +55,7 @@ public class TDDijkstra {
 
         this.activeNodes = new PriorityQueue<ActiveNode>(100, activeNodeComparator);
         this.parents = new HashMap<String, ActiveNode>();
-        activeNodes.add(new ActiveNode(startNodeId, 0.0, null));
+        activeNodes.add(new ActiveNode(startNodeId, startTime +0.0, null));
 
         while (activeNodes.size() != 0) {
             currentNode = activeNodes.poll();
@@ -83,8 +87,8 @@ public class TDDijkstra {
             if (nodeAdjacentArcs == null)
                 continue;
             for (int i = 0; i < nodeAdjacentArcs.size(); i++) {
-                Arc arc = nodeAdjacentArcs.get(i);
-                distToAdjNode = currentNode.getDist() + arc.getCost();
+                TDArc arc = nodeAdjacentArcs.get(i);
+                distToAdjNode = currentNode.getDist() + arc.getFullCost(currentNode.getDist());
                 if (shortestPathCost <= distToAdjNode)
                     continue;
                 // Ensure the node hasn't been settled
@@ -96,7 +100,6 @@ public class TDDijkstra {
                         parents.get(arc.getHeadNodeID()).setDist(distToAdjNode);
                         parents.get(arc.getHeadNodeID()).setParent(currentNode.getId());
                     }
-
                     activeNodes.add(activeNode);
                 }
             }
