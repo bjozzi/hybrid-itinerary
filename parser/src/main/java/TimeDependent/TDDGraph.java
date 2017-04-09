@@ -1,12 +1,12 @@
 package TimeDependent;
 
-import basic.Arc;
 import basic.Node;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by Karlis on 2017.03.23..
@@ -32,9 +32,10 @@ public class TDDGraph {
     public Map<String, Node> getNodes() {
         return nodes;
     }
-    public List<TDArc> getadjacentArc(String nodeID)
+    public List<TDArc> getadjacentArc(String nodeID, Double dist)
     {
-        return adjacentArcs.get(nodeID);
+        List<TDArc> openConnections = adjacentArcs.get(nodeID).stream().parallel().filter(x -> x.departureTime >= dist || x.departureTime == -1).collect(Collectors.toList());
+        return openConnections;
     }
 
     public Map<String, List<TDArc>> getadjacentArcs() {
@@ -47,7 +48,7 @@ public class TDDGraph {
         nodes.put(ID,new Node(ID, lat, lng));
         //adjacentArcs.put(ID, new ArrayList<Arc>());
     }
-    public void addEdge(String u, String v, double cost, int DepartureTime)
+    public void addEdge(String u, String v, double cost, double DepartureTime)
     {
         if(u.equals(v))
             return;

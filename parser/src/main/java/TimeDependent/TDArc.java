@@ -7,14 +7,14 @@ public class TDArc {
 
     public String headNodeID;
     public double cost;
-    public int departureTime; //if departure time is -1 then it is always accessible
+    public double departureTime; //if departure time is -1 then it is always accessible
     public double fullCost;
 
     public void setFullCost(double fullCost) {
         this.fullCost = fullCost;
     }
 
-    public void setDepartureTime(int departureTime) {
+    public void setDepartureTime(double departureTime) {
         this.departureTime = departureTime;
     }
 
@@ -30,7 +30,7 @@ public class TDArc {
         return headNodeID;
     }
 
-    public static TDArc createArc(String headNodeID, Double cost, int depTime) {
+    public static TDArc createArc(String headNodeID, Double cost, double depTime) {
         TDArc ar = new TDArc(headNodeID);
         ar.setCost(cost);
         ar.setDepartureTime(depTime);

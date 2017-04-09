@@ -38,10 +38,11 @@ public class TDDijkstra {
      *
      * @param startNodeId  - the (source) node to start the search from
      * @param targetNodeId - the (target) node to reach
+     * @param startTime
      * @return {@link Double#NEGATIVE_INFINITY} if no shortest path was found,
      * otherwise a value indicating the total cost of the shortest path
      */
-    public double computeShortestPath(String startNodeId, String targetNodeId, int startTime) {
+    public double computeShortestPath(String startNodeId, String targetNodeId, double startTime) {
 
         this.visitedNodeMarks = new HashMap<String, Double>();
         double shortestPathCost = Double.MAX_VALUE;
@@ -82,7 +83,7 @@ public class TDDijkstra {
             }
 
             // Discover all adjacent nodes
-            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId());
+            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId(), currentNode.getDist());
             // int currentLabel = graph.getNode(currentNode.getId()).getLabel();
             if (nodeAdjacentArcs == null)
                 continue;
