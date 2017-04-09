@@ -6,21 +6,20 @@ import TimeDependent.TDDijkstra;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.Time;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Main {
 
-    public static List<stop> Stops;
-    public static List<Transfer> Transfers;
-    public static Map<String, List<Stop_times>> StopTimes;
+
 
     public static void main(String[] args) {
         CSVParser csv = null;
-        Stops = new ArrayList<>();
-        Transfers = new ArrayList<>();
-        StopTimes = new HashMap<>();
+        List<stop> Stops = new ArrayList<>();
+        List<Transfer> Transfers = new ArrayList<>();
+        Map<String, List<Stop_times>> StopTimes = new HashMap<>();
         int number = 0;
         boolean first = true;
         try {
@@ -59,17 +58,20 @@ public class Main {
                 if (!StopTimes.get(trip_id).contains(st.stop_id))
                     StopTimes.get(trip_id).add(st);
             }
-
+         //  BasicDijkstra(Stops, Transfers, StopTimes);
+            TDDDijkstra(Stops, Transfers, StopTimes);
         } catch (EOFException e1) {
             e1.printStackTrace();
         } catch (FileNotFoundException e1) {
             e1.printStackTrace();
         } catch (IOException e1) {
             e1.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
     }
 
-    public void BasicDijkstra() throws ParseException {
+    public static void BasicDijkstra(List<stop> Stops, List<Transfer> Transfers, Map<String, List<Stop_times>> StopTimes) throws ParseException {
 
         Graph g = new Graph();
 
@@ -105,7 +107,7 @@ public class Main {
         System.out.println(dk + " " + d.shortestPathToString("000000004030", "000000002613"));
     }
 
-    public void TDDDijkstra() throws ParseException {
+    public static void TDDDijkstra(List<stop> Stops, List<Transfer> Transfers, Map<String, List<Stop_times>> StopTimes) throws ParseException {
         TDDGraph g = new TDDGraph();
 
         for (stop s : Stops) {
@@ -115,7 +117,7 @@ public class Main {
         }
 
         for (Transfer t : Transfers) {
-            g.addEdge(t.from_stop_id, t.to_stop_id, Double.parseDouble(t.min_transfer_time) /60, -1);
+            g.addEdge(t.from_stop_id, t.to_stop_id, Double.parseDouble(t.min_transfer_time) /60 , -1);
             g.addEdge(t.to_stop_id, t.from_stop_id, Double.parseDouble(t.min_transfer_time) /60, -1);
         }
         for (List<Stop_times> ss : StopTimes.values()) {
@@ -129,20 +131,40 @@ public class Main {
                 Date dateTimeFrom = formatter.parse(st_from.departure_time);
                 Date dateTimeTo = formatter.parse(st_to.arrival_time);
                 long timeBetween = dateTimeTo.getTime() - dateTimeFrom.getTime();
-                long seconds = timeBetween / 1000 /60;
+                long seconds = timeBetween / 1000 /60 ;
                 g.addEdge(st_from.stop_id, st_to.stop_id, seconds, TimeInMinutes(dateTimeFrom));
             }
         }
 
 
         TDDijkstra d = new TDDijkstra(g);
-        Double dk = d.computeShortestPath("000000004030", "000000002613", TimeInMinutes(new java.util.Date()));
-        System.out.println(dk + " " + d.shortestPathToString("000000004030", "000000002613"));
+        Date TimeNow = new java.util.Date();
+        System.out.println(TimeNow.getHours()+":"+TimeNow.getMinutes()+":"+TimeNow.getSeconds());
+        Double dk = d.computeShortestPath("000000004030", "000000002613", TimeInMinutes(TimeNow));
+        String when = MinutesToTime(dk);
+        System.out.println(when + " " + d.shortestPathToString("000000004030", "000000002613"));
 
     }
-    public int TimeInMinutes(Date depTime)
+    public static double TimeInMinutes(Date depTime)
     {
-       int minutes =  depTime.getHours() * 60 + depTime.getMinutes();
+       double minutes =  depTime.getHours() * 60 + depTime.getMinutes() + depTime.getSeconds() / 60;
        return minutes;
+    }
+    public static String MinutesToTime(double minutes)
+    {
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        Double minutesAsInt = Math.floor(minutes);
+        Double seconds = (minutes - minutesAsInt) * 60;
+        Double fullhours =minutesAsInt / 60;
+        Double hours = Math.floor(fullhours);
+        Double minute = (fullhours - hours) * 60;
+
+      /*  Date dateTime = new java.util.Date();
+        try {
+            dateTime = formatter.parse(hours.intValue()+":"+minute.intValue()+":"+seconds.intValue());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }*/
+        return hours.intValue()+":"+minute.intValue()+":"+seconds.intValue();
     }
 }

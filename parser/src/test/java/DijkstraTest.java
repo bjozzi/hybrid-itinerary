@@ -1,3 +1,6 @@
+import basic.Dijkstra;
+import basic.Graph;
+
 import static org.junit.Assert.*;
 
 /**
