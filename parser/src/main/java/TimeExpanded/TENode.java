@@ -4,23 +4,16 @@ package TimeExpanded;
  * Created by Karlis on 2017.03.23..
  */
 public class TENode {
-    private String ID;
-    private String station;
-    private float lat;
-    private float lng;
+    public String ID;
+    public String stopId;
+    public int time;
+    public int type;
 
-    public float getLat() {
-        return lat;
-    }
-
-    public float getLng() {
-        return lng;
-    }
-
-    public TENode(String ID, float lat, float lng) {
+    public TENode(String ID, String stopId, int time, int type) {
         this.ID = ID;
-        this.lat = lat;
-        this.lng = lng;
+        this.stopId = stopId;
+        this.time = time;
+        this.type = type;
     }
 
 

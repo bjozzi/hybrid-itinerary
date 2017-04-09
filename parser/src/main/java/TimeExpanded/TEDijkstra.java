@@ -1,26 +1,29 @@
-package basic;
+package TimeExpanded;
 
-import TimeExpanded.TEGraph;
+import basic.ActiveNode;
+import basic.Arc;
+import basic.Graph;
 
 import java.util.*;
 
 /**
- * Created by Karlis on 2017.03.23..
+ * Created by bjozz on 4/9/2017.
  */
-public class Dijkstra {
-    private Graph graph;
+public class TEDijkstra {
+
+    private TEGraph graph;
     private Map<String, Double> visitedNodeMarks;
     private PriorityQueue<ActiveNode> activeNodes;
     private Map<String, ActiveNode> parents;
 
     private Comparator<ActiveNode> activeNodeComparator;
 
-    public Dijkstra(Graph graph) {
+    public TEDijkstra(TEGraph graph) {
         this();
         this.graph = graph;
     }
 
-    private Dijkstra() {
+    private TEDijkstra() {
         this.activeNodeComparator = new Comparator<ActiveNode>() {
             public int compare(ActiveNode o1, ActiveNode o2) {
                 return (o1.getDist() - o2.getDist() < 0) ? -1 : 1;
@@ -43,7 +46,7 @@ public class Dijkstra {
 
         this.visitedNodeMarks = new HashMap<String, Double>();
         double shortestPathCost = Double.MAX_VALUE;
-        List<Arc> nodeAdjacentArcs;
+        List<TEArc> nodeAdjacentArcs;
         int numSettledNodes = 0;
         double distToAdjNode;
 
@@ -85,7 +88,7 @@ public class Dijkstra {
             if (nodeAdjacentArcs == null)
                 continue;
             for (int i = 0; i < nodeAdjacentArcs.size(); i++) {
-                Arc arc = nodeAdjacentArcs.get(i);
+                TEArc arc = nodeAdjacentArcs.get(i);
                 distToAdjNode = currentNode.getDist() + arc.getCost();
                 if (shortestPathCost <= distToAdjNode)
                     continue;
@@ -184,4 +187,5 @@ public class Dijkstra {
 
         return result;
     }*/
+
 }
