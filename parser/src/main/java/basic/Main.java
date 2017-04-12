@@ -23,7 +23,7 @@ public class Main {
         int number = 0;
         boolean first = true;
         try {
-            csv = new CSVParser("D:\\ITU\\4. semestris\\Final Thesis\\gtfs\\stops.txt");
+            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\gtfs\\stops.txt");
 
             while (csv.readNextLine()) {
                 if (first) {
@@ -33,7 +33,7 @@ public class Main {
                 stop s = new stop(csv.getItem(0), csv.getItem(1), csv.getItem(2), csv.getItem(3), csv.getItem(4), csv.getItem(5), csv.getItem(6), csv.getItem(7));
                 Stops.add(s);
             }
-            csv = new CSVParser("D:\\ITU\\4. semestris\\Final Thesis\\gtfs\\transfers.txt");
+            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\gtfs\\transfers.txt");
             first = true;
             while (csv.readNextLine()) {
                 if (first) {
@@ -43,7 +43,7 @@ public class Main {
                 Transfer t = new Transfer(csv.getItem(0), csv.getItem(1), csv.getItem(2), csv.getItem(3));
                 Transfers.add(t);
             }
-            csv = new CSVParser("D:\\ITU\\4. semestris\\Final Thesis\\gtfs\\stop_times.txt");
+            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\gtfs\\stop_times.txt");
             first = true;
             String trip_id;
             while (csv.readNextLine()) {

@@ -123,23 +123,27 @@ public class TEDijkstra {
      *
      * @param startNodeId  - the source node
      * @param targetNodeId - the target node
+     * @param stopNames
      * @return a string with a description of the path
      */
-    public String shortestPathToString(String startNodeId, String targetNodeId) {
+    public String shortestPathToString(String startNodeId, String targetNodeId, Map<String, String> stopNames) {
         String path = "";
+        String pathName = "";
         String currentNodeId;
         String endNodeId="";
 
         currentNodeId = targetNodeId;
         path = path + currentNodeId;
+        pathName = stopNames.get(currentNodeId.split("_")[1]);
         while (currentNodeId != startNodeId) {
             currentNodeId = parents.get(currentNodeId).getParent();
             path = currentNodeId + "->" + path;
+            pathName = stopNames.get(currentNodeId.split("_")[1]) + "->" + pathName;
             if (currentNodeId == null)
                 break;
         }
 
-        return path;
+        return path +"\n" + pathName;
     }
 
     /**

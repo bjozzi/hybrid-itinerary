@@ -43,7 +43,7 @@ public class RunParser {
             TEGraph g = new TEGraph();
             long startTime = System.nanoTime();
             GTFSReader reader = new GTFSReader();
-            reader.run();
+            reader.sequential();
             long estimatedTime = System.nanoTime() - startTime;
             System.out.println(estimatedTime);
 
@@ -66,8 +66,8 @@ public class RunParser {
                 long timeBetween = dateTimeTo.getTime() - dateTimeFrom.getTime();
                 long minutes = timeBetween / 1000 / 60;
 
-                String arrivalNodeId = st_to.tripId + j + st_to.stopId;
-                String departureNodeId = st_from.tripId + j + st_from.stopId;
+                String arrivalNodeId = st_to.tripId + j +"_"+ st_to.stopId;
+                String departureNodeId = st_from.tripId + j +"_"+ st_from.stopId;
 
                 g.createNode(arrivalNodeId, st_to.stopId, TimeInMinutes(dateTimeFrom), 2);
                 g.createNode(departureNodeId, st_from.stopId, TimeInMinutes(dateTimeTo), 1);
@@ -97,11 +97,11 @@ public class RunParser {
                             for (StopTime m : stopTimes1) {
                                 String stopId = m.stopId;
                                 int time = m.time;
-                                String nodeId = "transfer"+j+stopId;
+                                String nodeId = "transfer"+j+"_"+stopId;
                                 synchronized (lock){
                                     g.createNode(nodeId, stopId, teNode.time+time, 3);
                                     g.addEdge(teNode.ID,nodeId, time, stopId);
-                                    nodeOrder(stopId, teNode.time+time,"transfer"+j+ stopId, 3);
+                                    nodeOrder(stopId, teNode.time+time,nodeId, 3);
                                 }
                             }
                         }
@@ -112,7 +112,6 @@ public class RunParser {
             for(Future<?> future: futures){
                 future.get();
             }
-
 
 
             int k = 0;
@@ -142,11 +141,12 @@ public class RunParser {
             String stopId = "000000004030";
             ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) nodeOrders.get(stopId).stream().parallel().filter(x->x.minute >= TimeInMinutes(new Date()) ).sorted(NOcomparator).collect(toList());
             String nodeId = se.get(0).nodeId;
-
+            System.out.println(nodeId);
             String dk = d.computeShortestPath(nodeId, stopId, "000000002613");
+            System.out.println(dk);
             String endNodeId = dk.split(";")[1];
-            System.out.println(d.shortestPathToString(nodeId, endNodeId));
-            System.out.println(dk + " " + d.shortestPathToString("000000004030", "000000002613"));
+            System.out.println(d.shortestPathToString(nodeId, endNodeId, reader.stopNames));
+            //System.out.println(dk + " " + d.shortestPathToString("000000004030", "000000002613"));
 
         } catch (Exception e) {
             System.out.println(js);

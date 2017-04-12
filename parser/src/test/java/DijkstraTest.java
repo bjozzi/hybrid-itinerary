@@ -112,7 +112,7 @@ public class DijkstraTest {
 
         String  dic = d.computeShortestPath("1", "A", "C");
         String endNodeId = dic.split(";")[1];
-        System.out.println(d.shortestPathToString("1", endNodeId));
+        //System.out.println(d.shortestPathToString("1", endNodeId));
         //assertEquals(dic, 57.0);
     }
 

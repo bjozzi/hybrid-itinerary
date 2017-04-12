@@ -17,7 +17,7 @@ public class GTFSReaderTest {
         assertEquals(p.saturday.size(), 450);
         assertEquals(p.sunday.size(), 425);
         assertEquals(p.trips.size(), 46202);
-        assertEquals(p.transfers.size(), 25168);
+        assertEquals(p.transfers.size(), 25170);
     }
 
     @Test
