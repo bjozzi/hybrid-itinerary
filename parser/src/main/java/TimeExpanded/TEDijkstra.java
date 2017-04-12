@@ -1,7 +1,5 @@
 package TimeExpanded;
 
-import basic.ActiveNode;
-import basic.Arc;
 import basic.Graph;
 
 import java.util.*;
@@ -13,10 +11,10 @@ public class TEDijkstra {
 
     private TEGraph graph;
     private Map<String, Double> visitedNodeMarks;
-    private PriorityQueue<ActiveNode> activeNodes;
-    private Map<String, ActiveNode> parents;
+    private PriorityQueue<TEActiveNode> activeNodes;
+    private Map<String, TEActiveNode> parents;
 
-    private Comparator<ActiveNode> activeNodeComparator;
+    private Comparator<TEActiveNode> activeNodeComparator;
 
     public TEDijkstra(TEGraph graph) {
         this();
@@ -24,14 +22,14 @@ public class TEDijkstra {
     }
 
     private TEDijkstra() {
-        this.activeNodeComparator = new Comparator<ActiveNode>() {
-            public int compare(ActiveNode o1, ActiveNode o2) {
+        this.activeNodeComparator = new Comparator<TEActiveNode>() {
+            public int compare(TEActiveNode o1, TEActiveNode o2) {
                 return (o1.getDist() - o2.getDist() < 0) ? -1 : 1;
             }
         };
         this.visitedNodeMarks = new HashMap<String, Double>();
-        this.activeNodes = new PriorityQueue<ActiveNode>(100, activeNodeComparator);
-        this.parents = new HashMap<String, ActiveNode>();
+        this.activeNodes = new PriorityQueue<TEActiveNode>(100, activeNodeComparator);
+        this.parents = new HashMap<String, TEActiveNode>();
     }
 
     /**
@@ -42,21 +40,23 @@ public class TEDijkstra {
      * @return {@link Double#NEGATIVE_INFINITY} if no shortest path was found,
      * otherwise a value indicating the total cost of the shortest path
      */
-    public double computeShortestPath(String startNodeId, String targetNodeId) {
+    public String computeShortestPath(String startNodeId, String startStopId, String targetNodeId) {
 
         this.visitedNodeMarks = new HashMap<String, Double>();
         double shortestPathCost = Double.MAX_VALUE;
         List<TEArc> nodeAdjacentArcs;
         int numSettledNodes = 0;
         double distToAdjNode;
+        String endNodeId = "";
 
-        ActiveNode activeNode;
-        ActiveNode currentNode;
+        TEActiveNode activeNode;
+        TEActiveNode currentNode;
 
+        graph.getNode(startNodeId);
 
-        this.activeNodes = new PriorityQueue<ActiveNode>(100, activeNodeComparator);
-        this.parents = new HashMap<String, ActiveNode>();
-        activeNodes.add(new ActiveNode(startNodeId, 0.0, null));
+        this.activeNodes = new PriorityQueue<TEActiveNode>(100, activeNodeComparator);
+        this.parents = new HashMap<String, TEActiveNode>();
+        activeNodes.add(new TEActiveNode(startNodeId, 0.0, null, startStopId));
 
         while (activeNodes.size() != 0) {
             currentNode = activeNodes.poll();
@@ -71,8 +71,11 @@ public class TEDijkstra {
             numSettledNodes++;
 
             // Found target
-            if (currentNode.getId().equals(targetNodeId)) {
-                shortestPathCost = currentNode.getDist();
+            if (currentNode.getStopId().equals(targetNodeId)) {
+                if(shortestPathCost > currentNode.getDist()){
+                    endNodeId = currentNode.getId();
+                    shortestPathCost = currentNode.getDist();
+                }
                 //break;
             }
 
@@ -94,7 +97,7 @@ public class TEDijkstra {
                     continue;
                 // Ensure the node hasn't been settled
                 if (!parents.containsKey(arc.getHeadNodeID()) || parents.get(arc.getHeadNodeID()).getDist() > distToAdjNode) { // && currentLabel <= graph.getNode(arc.getHeadNodeId()).getLabel()) {
-                    activeNode = new ActiveNode(arc.getHeadNodeID(), distToAdjNode, currentNode.getId());
+                    activeNode = new TEActiveNode(arc.getHeadNodeID(), distToAdjNode, currentNode.getId(), arc.stopId);
                     if (!parents.containsKey(arc.getHeadNodeID()))
                         parents.put(arc.getHeadNodeID(), activeNode);
                     else {
@@ -107,7 +110,7 @@ public class TEDijkstra {
             }
         }
 
-        return shortestPathCost;
+        return shortestPathCost +";"+ endNodeId;
     }
 
     private boolean isVisited(String nodeId) {
@@ -125,6 +128,7 @@ public class TEDijkstra {
     public String shortestPathToString(String startNodeId, String targetNodeId) {
         String path = "";
         String currentNodeId;
+        String endNodeId="";
 
         currentNodeId = targetNodeId;
         path = path + currentNodeId;

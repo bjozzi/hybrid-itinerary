@@ -47,7 +47,7 @@ public class TEGraph  {
     {
         nodes.put(ID,new TENode(ID, station, time, type));
     }
-    public void addEdge(String u, String v, double cost)
+    public void addEdge(String u, String v, double cost, String vStation)
     {
         if(u.equals(v))
             return;
@@ -55,11 +55,11 @@ public class TEGraph  {
         TENode unode = getNode(u);
         TENode vnode = getNode(v);
 
-        if(unode == null || vnode == null) {
+        /*if(unode == null || vnode == null) {
             return;
-        }
+        }*/
 
-        TEArc uarc = TEArc.createArc(v, cost);
+        TEArc uarc = TEArc.createArc(v, cost, vStation);
         addArc(u, uarc);
     }
     public int getNumNodes()

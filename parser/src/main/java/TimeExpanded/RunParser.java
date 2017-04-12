@@ -2,9 +2,16 @@ package TimeExpanded;
 
 import basic.*;
 
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by bjozz on 4/8/2017.
@@ -13,9 +20,13 @@ public class RunParser {
     public static Map<String, ArrayList<NodeOrder>> nodeOrders = new HashMap<>();
     public static Map<String, ArrayList<StopTime>> transfers = new HashMap<>();
 
+
     public static Comparator NOcomparator = new Comparator<NodeOrder>() {
         public int compare(NodeOrder o1, NodeOrder o2) {
             if(o1.minute - o2.minute  == 0){
+                if(o1.type == o2.type){
+                    return 0;
+                }
                 return  (o1.type - o2.type > 0) ? 1 : -1;
             }
             else if(o1.minute - o2.minute < 0){
@@ -27,77 +38,21 @@ public class RunParser {
     };
 
     public static void main(String[] args) {
-
-        CSVParser csv = null;
-        boolean first = false;
-        ArrayList<StopTimes> stopTimes = new ArrayList<>();
-        ArrayList<String> weekday = new ArrayList<>(), saturday = new ArrayList<>(), sunday = new ArrayList<>(), trips = new ArrayList<>();
         int js = 0;
         try {
             TEGraph g = new TEGraph();
+            long startTime = System.nanoTime();
+            GTFSReader reader = new GTFSReader();
+            reader.run();
+            long estimatedTime = System.nanoTime() - startTime;
+            System.out.println(estimatedTime);
 
-            //read stop times and fill in map of stopTimes
-            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\gtfs\\calendar.txt");
-            first = true;
-            while (csv.readNextLine()) {
-                if (first) {
-                    first = false;
-                    continue;
-                }
-                if(csv.getItem(1).equals("1") || csv.getItem(2).equals("1") || csv.getItem(3).equals("1") || csv.getItem(4).equals("1") || csv.getItem(5).equals("1")) weekday.add(csv.getItem(0));
-                if(csv.getItem(6).equals("1")) saturday.add(csv.getItem(0));
-                if(csv.getItem(7).equals("1")) sunday.add(csv.getItem(0));
-            }
-
-            //read stop times and fill in map of stopTimes
-            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\gtfs\\trips.txt");
-            first = true;
-            while (csv.readNextLine()) {
-                js++;
-                if (first) {
-                    first = false;
-                    continue;
-                }
-                if(weekday.contains(csv.getItem(1))){
-                    trips.add(csv.getItem(2));
-                }
-            }
-
-            //read stop times and fill in map of stopTimes
-            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\gtfs\\stop_times.txt");
-            first = true;
-            String trip_id;
-            while (csv.readNextLine()) {
-                if (first) {
-                    first = false;
-                    continue;
-                }
-                trip_id = csv.getItem(0);
-                if(trips.contains(trip_id)){
-                    StopTimes st = new StopTimes(csv.getItem(1), csv.getItem(2), csv.getItem(3), Integer.parseInt(csv.getItem(4)), Integer.parseInt(csv.getItem(5)), Integer.parseInt(csv.getItem(6)), csv.getItem(7));
-                    st.tripId = trip_id;
-                    stopTimes.add(st);
-                }
-            }
-
-            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\gtfs\\transfers.txt");
-            first = true;
-            while (csv.readNextLine()) {
-                if (first) {
-                    first = false;
-                    continue;
-                }
-                Transfer t = new Transfer(csv.getItem(0), csv.getItem(1), csv.getItem(2), csv.getItem(3));
-                fillTransfer(t);
-            }
-
-
-            for (int j = 0; j < stopTimes.size(); j++) {
-                if (j + 1 == stopTimes.size())
+            for (int j = 0; j < reader.stopTimes.size(); j++) {
+                if (j + 1 == reader.stopTimes.size())
                     break;
 
-                StopTimes st_from = stopTimes.get(j);
-                StopTimes st_to = stopTimes.get(j + 1);
+                StopTimes st_from = reader.stopTimes.get(j);
+                StopTimes st_to = reader.stopTimes.get(j + 1);
 
                 if (!st_from.tripId.equals(st_to.tripId)) {
                     continue;
@@ -114,36 +69,57 @@ public class RunParser {
                 String arrivalNodeId = st_to.tripId + j + st_to.stopId;
                 String departureNodeId = st_from.tripId + j + st_from.stopId;
 
-                g.createNode(st_from.tripId, st_to.stopId, TimeInMinutes(dateTimeFrom), 2);
-                g.createNode(st_to.tripId, st_from.stopId, TimeInMinutes(dateTimeTo), 1);
-                g.addEdge(departureNodeId, arrivalNodeId, minutes);
+                g.createNode(arrivalNodeId, st_to.stopId, TimeInMinutes(dateTimeFrom), 2);
+                g.createNode(departureNodeId, st_from.stopId, TimeInMinutes(dateTimeTo), 1);
+                g.addEdge(departureNodeId, arrivalNodeId, minutes, st_to.stopId);
 
                 nodeOrder(st_to.stopId, TimeInMinutes(dateTimeFrom), arrivalNodeId, 1);
                 nodeOrder(st_from.stopId, TimeInMinutes(dateTimeTo), departureNodeId, 2);
 
-
-                if (transfers.containsKey(st_from.stopId)) {
-                    ArrayList<StopTime> stopTimes1 = transfers.get(st_from.stopId);
-                    for (StopTime m : stopTimes1) {
-                        String stopId = m.stopId;
-                        int time = m.time;
-                        g.createNode("transfer", stopId, TimeInMinutes(dateTimeFrom)+time, 3);
-                        g.addEdge(arrivalNodeId,"transfer"+j+ stopId, time);
-                        nodeOrder(stopId, TimeInMinutes(dateTimeFrom)+time,"transfer"+j+ stopId, 3);
-                    }
-                }
-
             }
+
+
+            List<TENode> arrivalNodes = g.getNodes().values().stream().parallel().filter(x -> x.type == 1).collect(toList());
+            ExecutorService executor = Executors.newFixedThreadPool(9);
+            List<Future<?>> futures = new ArrayList<Future<?>>();
+            Object lock = new Object();
+            int sizeofArrivalNodes = arrivalNodes.size();
+            for (int i = 0; i < 9; i++) {
+
+                final int from = sizeofArrivalNodes/9  * i;
+                final int to = (i+1 >= sizeofArrivalNodes) ? sizeofArrivalNodes : sizeofArrivalNodes/9 * (i+1);
+
+                futures.add(executor.submit( () -> {
+                    for (int j = from; j < to; j++) {
+                        TENode teNode = arrivalNodes.get(j);
+                        if (transfers.containsKey(teNode.stopId) ) {
+                            ArrayList<StopTime> stopTimes1 = transfers.get(teNode.stopId);
+                            for (StopTime m : stopTimes1) {
+                                String stopId = m.stopId;
+                                int time = m.time;
+                                String nodeId = "transfer"+j+stopId;
+                                synchronized (lock){
+                                    g.createNode(nodeId, stopId, teNode.time+time, 3);
+                                    g.addEdge(teNode.ID,nodeId, time, stopId);
+                                    nodeOrder(stopId, teNode.time+time,"transfer"+j+ stopId, 3);
+                                }
+                            }
+                        }
+                    }
+                }));
+            }
+
+            for(Future<?> future: futures){
+                future.get();
+            }
+
+
 
             int k = 0;
             for (List<NodeOrder> no : nodeOrders.values()) {
-                if(k == 97){
-                    int sdf = 0;
-                    System.out.println(sdf);
-                }
 
                 try{
-                    ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) no.stream().parallel().sorted(NOcomparator).collect(Collectors.toList());
+                    ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) no.stream().parallel().sorted(NOcomparator).collect(toList());
                     for (int i = 0; i < se.size(); i++) {
                         if (i + 1 == se.size())
                             break;
@@ -151,9 +127,7 @@ public class RunParser {
 
                         NodeOrder earlier = se.get(i);
                         NodeOrder later = se.get(i + 1);
-                        g.addEdge(earlier.stopId, later.stopId, later.minute - earlier.minute);
-
-
+                        g.addEdge(earlier.nodeId, later.nodeId, later.minute - earlier.minute, later.stopId);
                     }
                 }catch (Exception e){
                     System.out.println(k);
@@ -165,7 +139,13 @@ public class RunParser {
 
             TEDijkstra d = new TEDijkstra(g);
 
-            Double dk = d.computeShortestPath("000000004030", "000000002613", TimeInMinutes(new java.util.Date()));
+            String stopId = "000000004030";
+            ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) nodeOrders.get(stopId).stream().parallel().filter(x->x.minute >= TimeInMinutes(new Date()) ).sorted(NOcomparator).collect(toList());
+            String nodeId = se.get(0).nodeId;
+
+            String dk = d.computeShortestPath(nodeId, stopId, "000000002613");
+            String endNodeId = dk.split(";")[1];
+            System.out.println(d.shortestPathToString(nodeId, endNodeId));
             System.out.println(dk + " " + d.shortestPathToString("000000004030", "000000002613"));
 
         } catch (Exception e) {
@@ -177,29 +157,12 @@ public class RunParser {
 
     }
 
-    private static void fillTransfer(Transfer t) {
-        if (transfers.containsKey(t.from_stop_id)) {
-            transfers.get(t.from_stop_id).add(new StopTime(t.to_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
-        } else {
-            ArrayList<StopTime> hm = new ArrayList<>();
-            hm.add(new StopTime(t.to_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
-            transfers.put(t.from_stop_id, hm);
-        }
-        if (transfers.containsKey(t.to_stop_id)) {
-            transfers.get(t.to_stop_id).add(new StopTime(t.from_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
-        } else {
-            ArrayList<StopTime> hm = new ArrayList<>();
-            hm.add(new StopTime(t.from_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
-            transfers.put(t.to_stop_id, hm);
-        }
-    }
-
     private static void nodeOrder(String stopId, int minutes, String nodeId, int type) {
         if (nodeOrders.containsKey(stopId)) {
-            nodeOrders.get(stopId).add(new NodeOrder(nodeId, minutes, type));
+            nodeOrders.get(stopId).add(new NodeOrder(nodeId, minutes, type, stopId));
         } else {
             ArrayList<NodeOrder> no = new ArrayList<>();
-            no.add(new NodeOrder(nodeId, minutes, type));
+            no.add(new NodeOrder(nodeId, minutes, type, stopId));
             nodeOrders.put(stopId, no);
         }
     }

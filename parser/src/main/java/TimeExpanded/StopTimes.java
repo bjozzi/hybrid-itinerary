@@ -12,7 +12,7 @@ public class StopTimes {
     public int stop_sequence, pickup_type, drop_off_type;
     public Date arrival_time, departure_time;
 
-    public StopTimes(String arrival_time, String departure_time, String stop_id, int stop_sequence, int pickup_type, int drop_off_type, String stop_headsign) {
+    public StopTimes(String tripId, String arrival_time, String departure_time, String stop_id, int stop_sequence, int pickup_type, int drop_off_type, String stop_headsign) {
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         try {
             Date dateTimeTo = formatter.parse(arrival_time);
@@ -22,6 +22,7 @@ public class StopTimes {
         } catch (ParseException e) {
             e.printStackTrace();
         }
+        this.tripId = tripId;
         this.stopId = stop_id;
         this.stop_headsign = stop_headsign;
         this.stop_sequence = stop_sequence;

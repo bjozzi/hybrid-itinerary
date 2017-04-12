@@ -6,23 +6,24 @@ package TimeExpanded;
 public class TEArc {
     public String headNodeID;
     public double cost;
-    public String GTFSName;
+    public String stopId;
 
     public void setCost(double cost) {
         this.cost = cost;
     }
 
-    public TEArc(String headNodeID) {
+    public TEArc(String headNodeID, String stopId) {
         this.headNodeID = headNodeID;
+        this.stopId = stopId;
     }
 
     public String getHeadNodeID() {
         return headNodeID;
     }
 
-    public static TEArc createArc(String headNodeID, Double cost)
+    public static TEArc createArc(String headNodeID, Double cost, String stopId)
     {
-        TEArc ar = new TEArc(headNodeID);
+        TEArc ar = new TEArc(headNodeID, stopId);
         ar.setCost(cost);
         return ar;
     }

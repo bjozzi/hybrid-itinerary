@@ -4,18 +4,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Karlis on 2017.03.23..
  */
 public class Graph {
 
-    private Map<String, Node> nodes;
-    private Map<String, List<Arc>> adjacentArcs;
+    private ConcurrentHashMap<String, Node> nodes;
+    private ConcurrentHashMap<String, List<Arc>> adjacentArcs;
 
     public Graph() {
-        this.nodes = new HashMap<String, Node>();
-        this.adjacentArcs = new HashMap<String, List<Arc>>();
+        this.nodes = new ConcurrentHashMap<String, Node>();
+        this.adjacentArcs = new ConcurrentHashMap<String, List<Arc>>();
     }
     public void addArc(String sourceID, Arc arc) {
         if (!adjacentArcs.containsKey(sourceID))
