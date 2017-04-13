@@ -1,15 +1,7 @@
 package TimeExpanded;
 
-import basic.*;
-
-import java.io.*;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Lock;
-import java.util.function.Function;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -17,8 +9,10 @@ import static java.util.stream.Collectors.toList;
  * Created by bjozz on 4/8/2017.
  */
 public class RunParser {
-    public static Map<String, ArrayList<NodeOrder>> nodeOrders = new HashMap<>();
-    public static Map<String, ArrayList<StopTime>> transfers = new HashMap<>();
+    public  Map<String, ArrayList<NodeOrder>> nodeOrders = new HashMap<>();
+    public  Map<String, ArrayList<StopTime>> transfers = new HashMap<>();
+    public TEGraph g = new TEGraph();
+    public  Map<String, String> stopNames = new ConcurrentHashMap<>();
 
 
     public static Comparator NOcomparator = new Comparator<NodeOrder>() {
@@ -38,14 +32,30 @@ public class RunParser {
     };
 
     public static void main(String[] args) {
+        /*run();
+        TEDijkstra d = new TEDijkstra(g);
+
+            //thisted: 000785000100G -> 000787009900G
+
+            String stopId = "000008600858";
+            ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) nodeOrders.get(stopId).stream().parallel().filter(x->x.minute >= TimeInMinutes(new Date()) ).sorted(NOcomparator).collect(toList());
+            String nodeId = se.get(0).nodeId;
+            System.out.println(nodeId);
+            String dk = d.computeShortestPath(nodeId, stopId, "000008600020G");
+            System.out.println(dk);
+            String endNodeId = dk.split(";")[1];
+            System.out.println(d.shortestPathToString(nodeId, endNodeId, reader.stopNames));*/
+    }
+
+    public void run() {
         int js = 0;
         try {
-            TEGraph g = new TEGraph();
             long startTime = System.nanoTime();
             GTFSReader reader = new GTFSReader();
             reader.sequential();
             long estimatedTime = System.nanoTime() - startTime;
             System.out.println(estimatedTime);
+            stopNames = reader.stopNames;
 
             for (int j = 0; j < reader.stopTimes.size(); j++) {
                 if (j + 1 == reader.stopTimes.size())
@@ -61,20 +71,19 @@ public class RunParser {
                 //Date arrivalTime = formatter.parse(st_from.arrival_time);
                 //Date departureTime = formatter.parse(st_to.departure_time);
 
-                Date dateTimeFrom = st_from.departure_time;
-                Date dateTimeTo = st_to.arrival_time;
-                long timeBetween = dateTimeTo.getTime() - dateTimeFrom.getTime();
-                long minutes = timeBetween / 1000 / 60;
+                double dateTimeDeparture = st_from.departure_time;
+                double dateTimeArrival = st_to.arrival_time;
+                double timeBetween = dateTimeArrival - dateTimeDeparture;
 
                 String arrivalNodeId = st_to.tripId + j +"_"+ st_to.stopId;
                 String departureNodeId = st_from.tripId + j +"_"+ st_from.stopId;
 
-                g.createNode(arrivalNodeId, st_to.stopId, TimeInMinutes(dateTimeFrom), 2);
-                g.createNode(departureNodeId, st_from.stopId, TimeInMinutes(dateTimeTo), 1);
-                g.addEdge(departureNodeId, arrivalNodeId, minutes, st_to.stopId);
+                g.createNode(arrivalNodeId, st_to.stopId, dateTimeArrival, 2);
+                g.createNode(departureNodeId, st_from.stopId, dateTimeDeparture, 1);
+                g.addEdge(departureNodeId, arrivalNodeId, timeBetween, st_to.stopId);
 
-                nodeOrder(st_to.stopId, TimeInMinutes(dateTimeFrom), arrivalNodeId, 1);
-                nodeOrder(st_from.stopId, TimeInMinutes(dateTimeTo), departureNodeId, 2);
+                nodeOrder(st_to.stopId, dateTimeArrival, arrivalNodeId, 1);
+                nodeOrder(st_from.stopId, dateTimeDeparture, departureNodeId, 2);
 
             }
 
@@ -114,9 +123,10 @@ public class RunParser {
             }
 
 
+
+            //creates connections within station for waiting arcs
             int k = 0;
             for (List<NodeOrder> no : nodeOrders.values()) {
-
                 try{
                     ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) no.stream().parallel().sorted(NOcomparator).collect(toList());
                     for (int i = 0; i < se.size(); i++) {
@@ -126,8 +136,14 @@ public class RunParser {
 
                         NodeOrder earlier = se.get(i);
                         NodeOrder later = se.get(i + 1);
+                        if(earlier.minute > later.minute){
+                            System.out.println("LARGERS");
+                        }
                         g.addEdge(earlier.nodeId, later.nodeId, later.minute - earlier.minute, later.stopId);
                     }
+
+
+
                 }catch (Exception e){
                     System.out.println(k);
                     e.printStackTrace();
@@ -136,16 +152,36 @@ public class RunParser {
 
             }
 
-            TEDijkstra d = new TEDijkstra(g);
 
-            String stopId = "000000004030";
-            ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) nodeOrders.get(stopId).stream().parallel().filter(x->x.minute >= TimeInMinutes(new Date()) ).sorted(NOcomparator).collect(toList());
-            String nodeId = se.get(0).nodeId;
-            System.out.println(nodeId);
-            String dk = d.computeShortestPath(nodeId, stopId, "000000002613");
-            System.out.println(dk);
-            String endNodeId = dk.split(";")[1];
-            System.out.println(d.shortestPathToString(nodeId, endNodeId, reader.stopNames));
+            //g.getadjacentArcs().entrySet().stream().flatMap(e -> e.getValue().stream()).filter(x -> x.cost <= 0).forEach(x-> System.out.println(x.cost) );
+                int efs = 234;
+
+
+            /*ArrayList<NodeOrder> n = nodeOrders.get("000008600858");
+            String stopId = "000008600858";
+            String nodeId = "419956951042729_000008600858";
+            NodeOrder se =  nodeOrders.get(stopId).stream().parallel().reduce((a,b)-> a.minute < b.minute ? a:b).get();
+
+
+            Queue<String> arcStack = new ConcurrentLinkedQueue<>();
+            arcStack.add(se.nodeId);
+
+            while (!arcStack.isEmpty()){
+                String nodeString = arcStack.poll();
+                List<TEArc> arcsAdj = g.getadjacentArc(nodeString);//(nodeString).stream().filter(x -> x.stopId == stopId).collect(toList());
+                if(arcsAdj != null){
+                    arcsAdj.stream().forEach(x->arcStack.add(x.headNodeID));
+                }else{
+                    System.out.println( " ------------------------------------------------- " );
+                    break;
+                }
+                TENode teNode = g.getNode(nodeString);
+                System.out.println("nodeID:" + nodeString + " Time: " + teNode.time + " type:" + teNode.type );
+            }*/
+
+
+
+
             //System.out.println(dk + " " + d.shortestPathToString("000000004030", "000000002613"));
 
         } catch (Exception e) {
@@ -157,7 +193,7 @@ public class RunParser {
 
     }
 
-    private static void nodeOrder(String stopId, int minutes, String nodeId, int type) {
+    private void nodeOrder(String stopId, double minutes, String nodeId, int type) {
         if (nodeOrders.containsKey(stopId)) {
             nodeOrders.get(stopId).add(new NodeOrder(nodeId, minutes, type, stopId));
         } else {

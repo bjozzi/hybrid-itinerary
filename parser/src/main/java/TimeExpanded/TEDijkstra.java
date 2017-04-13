@@ -1,6 +1,7 @@
 package TimeExpanded;
 
 import basic.Graph;
+import basic.Main;
 
 import java.util.*;
 
@@ -13,6 +14,7 @@ public class TEDijkstra {
     private Map<String, Double> visitedNodeMarks;
     private PriorityQueue<TEActiveNode> activeNodes;
     private Map<String, TEActiveNode> parents;
+    private Set<String> stationsVisited;
 
     private Comparator<TEActiveNode> activeNodeComparator;
 
@@ -30,6 +32,7 @@ public class TEDijkstra {
         this.visitedNodeMarks = new HashMap<String, Double>();
         this.activeNodes = new PriorityQueue<TEActiveNode>(100, activeNodeComparator);
         this.parents = new HashMap<String, TEActiveNode>();
+        this.stationsVisited = new HashSet<>();
     }
 
     /**
@@ -58,15 +61,25 @@ public class TEDijkstra {
         this.parents = new HashMap<String, TEActiveNode>();
         activeNodes.add(new TEActiveNode(startNodeId, 0.0, null, startStopId));
 
+        String previousStation="";
         while (activeNodes.size() != 0) {
             currentNode = activeNodes.poll();
-
+            //System.out.println(currentNode.getId());
+            //System.out.println(currentNode.getDist());
             if (isVisited(currentNode.getId())) {
                 continue;
             }
 
             // Mark as settled
             visitedNodeMarks.put(currentNode.getId(), currentNode.getDist());
+
+            /*if(stationsVisited.contains(currentNode.getStopId()) && !currentNode.getStopId().equals(previousStation)){
+                continue;
+            }else if(!targetNodeId.equals(currentNode.getStopId())){
+                stationsVisited.add(currentNode.getStopId());
+            }
+            previousStation = currentNode.getStopId();*/
+
 
             numSettledNodes++;
 
@@ -78,6 +91,9 @@ public class TEDijkstra {
                 }
                 //break;
             }
+            /*if(numSettledNodes == 10000){
+                break;
+            }*/
 
             // Graph was apparently not connected
             if (numSettledNodes > graph.getNumNodes()) {
@@ -138,7 +154,7 @@ public class TEDijkstra {
         while (currentNodeId != startNodeId) {
             currentNodeId = parents.get(currentNodeId).getParent();
             path = currentNodeId + "->" + path;
-            pathName = stopNames.get(currentNodeId.split("_")[1]) + "->" + pathName;
+            pathName = stopNames.get(currentNodeId.split("_")[1])+"@"+ Main.MinutesToTime( graph.getNode(currentNodeId).time )+ "type:" + graph.getNode(currentNodeId).type + "->" + pathName;
             if (currentNodeId == null)
                 break;
         }

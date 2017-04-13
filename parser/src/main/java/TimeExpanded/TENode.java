@@ -6,10 +6,10 @@ package TimeExpanded;
 public class TENode {
     public String ID;
     public String stopId;
-    public int time;
+    public double time;
     public int type;
 
-    public TENode(String ID, String stopId, int time, int type) {
+    public TENode(String ID, String stopId, double time, int type) {
         this.ID = ID;
         this.stopId = stopId;
         this.time = time;

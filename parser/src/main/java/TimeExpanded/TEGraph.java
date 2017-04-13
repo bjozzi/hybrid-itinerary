@@ -1,9 +1,6 @@
 package TimeExpanded;
 
 
-import basic.Arc;
-import basic.Node;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +40,7 @@ public class TEGraph  {
         return adjacentArcs;
     }
 
-    public void createNode(String ID, String station, int time, int type)
+    public void createNode(String ID, String station, double time, int type)
     {
         nodes.put(ID,new TENode(ID, station, time, type));
     }
@@ -55,6 +52,9 @@ public class TEGraph  {
         TENode unode = getNode(u);
         TENode vnode = getNode(v);
 
+        if(vnode.time - unode.time < 0){
+            System.out.println("add edge in TEGraph ERROR!");
+        }
         /*if(unode == null || vnode == null) {
             return;
         }*/
