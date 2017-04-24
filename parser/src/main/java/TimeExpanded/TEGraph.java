@@ -40,9 +40,9 @@ public class TEGraph  {
         return adjacentArcs;
     }
 
-    public void createNode(String ID, String station, double time, int type)
+    public void createNode(String ID, String station, double time, int type, String trip)
     {
-        nodes.put(ID,new TENode(ID, station, time, type));
+        nodes.put(ID,new TENode(ID, station, time, type, trip));
     }
     public void addEdge(String u, String v, double cost, String vStation)
     {

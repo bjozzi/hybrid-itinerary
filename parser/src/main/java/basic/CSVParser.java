@@ -63,10 +63,15 @@ public class CSVParser {
                     apostrophePos0 = i;
                 } else {
                     // => Second apostrophe found.
-                    currentItems[itemCounter] = line.substring(apostrophePos0 + 1, i);
-                    // Remove spaces.
-                    currentItems[itemCounter] = currentItems[itemCounter].trim();
-                    itemCounter++;
+                    try{
+                        currentItems[itemCounter] = line.substring(apostrophePos0 + 1, i);
+                        // Remove spaces.
+                        currentItems[itemCounter] = currentItems[itemCounter].trim();
+                        itemCounter++;
+                    }catch (Exception e){
+                        System.out.println(line);
+                        e.printStackTrace();
+                    }
                 }
             } else if (line.charAt(i) == ',') {
                 if (apostrophePos0 == -1) {
