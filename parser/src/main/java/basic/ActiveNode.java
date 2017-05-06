@@ -3,12 +3,17 @@ package basic;
 /**
  * Created by Karlis on 2017.03.23..
  */
-public class ActiveNode {
+public class ActiveNode  implements Comparable{
     private String id;
     private Double dist;
     private String parent;
+    private String trip_id;
 
     public ActiveNode() {
+    }
+
+    public String getTrip_id() {
+        return trip_id;
     }
 
     /**
@@ -22,6 +27,13 @@ public class ActiveNode {
         this.id = id;
         this.dist = dist;
         this.parent = parent;
+        this.trip_id = "";
+    }
+    public ActiveNode(String id, Double dist, String parent, String trip_id) {
+        this.id = id;
+        this.dist = dist;
+        this.parent = parent;
+        this.trip_id = trip_id;
     }
 
     public String getId() {
@@ -47,4 +59,10 @@ public class ActiveNode {
     public void setParent(String parent) {
         this.parent = parent;
     }
+
+    @Override
+    public int compareTo(Object o) {
+        return 0;
+    }
+
 }

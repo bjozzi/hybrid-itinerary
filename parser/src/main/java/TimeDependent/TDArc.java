@@ -9,6 +9,7 @@ public class TDArc {
     public double cost;
     public double departureTime; //if departure time is -1 then it is always accessible
     public double fullCost;
+    public String tripID;
 
     public void setFullCost(double fullCost) {
         this.fullCost = fullCost;
@@ -30,10 +31,11 @@ public class TDArc {
         return headNodeID;
     }
 
-    public static TDArc createArc(String headNodeID, Double cost, double depTime) {
+    public static TDArc createArc(String headNodeID, Double cost, double depTime, String tripID) {
         TDArc ar = new TDArc(headNodeID);
         ar.setCost(cost);
         ar.setDepartureTime(depTime);
+        ar.tripID = tripID;
         return ar;
     }
 
@@ -41,14 +43,15 @@ public class TDArc {
         return cost;
     }
 
-    public double getFullCost(double TimeNow) {
-        double WaitingNGoing = 0;
+    public double getFullCost(double TimeNow, String trip_id) {
+        double Waiting = 0;
         if (departureTime == -1)
-            WaitingNGoing = cost;
+            Waiting = 0;//cost;
         else
-            WaitingNGoing = departureTime - TimeNow + cost;
-
-        setFullCost(WaitingNGoing);
-        return WaitingNGoing;
+            Waiting = departureTime - TimeNow;// + cost;
+        if (Waiting < 0)
+            Waiting = Waiting * (-1);
+        setFullCost(Waiting);
+        return Waiting;
     }
 }
