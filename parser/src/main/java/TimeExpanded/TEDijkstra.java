@@ -2,9 +2,12 @@ package TimeExpanded;
 
 import basic.Graph;
 import basic.Main;
+import basic.Node;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by bjozz on 4/9/2017.
@@ -127,7 +130,8 @@ public class TEDijkstra {
             }
         }
 
-        return shortestPathCost +";"+ endNodeId;
+        //return shortestPathCost +";"+ endNodeId;
+        return endNodeId;
     }
 
     private boolean isVisited(String nodeId) {
@@ -153,14 +157,46 @@ public class TEDijkstra {
         path = path + currentNodeId;
         pathName = stopNames.get(currentNodeId.split("_")[1]);
         while (!currentNodeId.equals(startNodeId)) {
-            currentNodeId = parents.get(currentNodeId).getParent();
+            try {
+                currentNodeId = parents.get(currentNodeId).getParent();
+            }catch (Exception e){
+                System.out.println("shortest path not found" + e.getMessage());
+                break;
+            }
             path = currentNodeId + "->" + path;
             pathName = stopNames.get(currentNodeId.split("_")[1])+"@"+ Main.MinutesToTime( graph.getNode(currentNodeId).time )+ "trip:" + graph.getNode(currentNodeId).trip + "type:" + graph.getNode(currentNodeId).type + "->" + pathName;
             if (currentNodeId == null)
                 break;
         }
 
-        return path +"\n" + pathName;
+        //return path +"\n" + pathName;
+        return pathName;
+    }
+
+    public String shortestPathToStation(String stationId, String targetNodeId, Map<String, String> stopNames) {
+        String path = "";
+        String pathName = "";
+        String currentNodeId;
+        String endNodeId="";
+
+        currentNodeId = targetNodeId;
+        path = path + currentNodeId;
+        pathName = stopNames.get(currentNodeId.split("_")[1]);
+        while (!graph.getNode(currentNodeId).stopId.equals(stationId)) {
+            try {
+                currentNodeId = parents.get(currentNodeId).getParent();
+            }catch (Exception e){
+                System.out.println("shortest path not found" + e.getMessage());
+                break;
+            }
+            path = currentNodeId + "->" + path;
+            pathName = stopNames.get(currentNodeId.split("_")[1])+"@"+ Main.MinutesToTime( graph.getNode(currentNodeId).time )+ "trip:" + graph.getNode(currentNodeId).trip + "type:" + graph.getNode(currentNodeId).type + "->" + pathName;
+            if (currentNodeId == null)
+                break;
+        }
+
+        //return path +"\n" + pathName;
+        return pathName;
     }
 
 
@@ -206,36 +242,50 @@ public class TEDijkstra {
     }
 
 
-    public TransferPattern transferPattern(String startNodeId, String targetNodeId) {
+    public TransferPattern transferPattern(String startStationId, String targetNodeId) {
         String currentNodeId;
         String previousNode = "";
         TransferPattern transferPattern = new TransferPattern();
-        transferPattern.startTime = graph.getNode(startNodeId).time;
+        List<Double> timeOrder = new ArrayList<>();
         currentNodeId = targetNodeId;
-        int counter = 0;
-        while (currentNodeId != startNodeId) {
+        while (!graph.getNode(currentNodeId).stopId.equals(startStationId)) {
             previousNode = currentNodeId;
-            currentNodeId = parents.get(currentNodeId).getParent();
-            if(graph.getNode(currentNodeId).type == 1 && graph.getNode(previousNode).type == 2){
+            try {
+                currentNodeId = parents.get(currentNodeId).getParent();
+            }catch (Exception e){
+                System.out.println("no path");
+                break;
+            }
+            TENode currentNode = graph.getNode(currentNodeId);
+            if(currentNode.type == 1 && graph.getNode(previousNode).type == 2){
                 transferPattern.transferPattern.add(currentNodeId.split("_")[1]);
+                timeOrder.add(currentNode.time);
                 //transferPattern.add(stopNames.get(currentNodeId.split("_")[1])+"@"+ Main.MinutesToTime( graph.getNode(currentNodeId).time )+ "type:" + graph.getNode(currentNodeId).type );
             }
             if (currentNodeId == null)
                 break;
-            if(transferPattern.transferPattern.size() > 100){
-                System.out.print("break");
-                break;
-            }
-            if(counter > 500){
-                break;
-            }
-            counter++;
+
         }
         Collections.reverse(transferPattern.transferPattern);
-        transferPattern.transferPattern.add(0,startNodeId.split("_")[1]);
-        transferPattern.transferPattern.add(targetNodeId.split("_")[1]);
-        transferPattern.endTime = graph.getNode(targetNodeId).time;
-        transferPattern.transferTime = transferPattern.endTime - transferPattern.startTime;
+        Collections.reverse(timeOrder);
+        try{
+            TENode startNode = graph.getNode(currentNodeId);
+            TENode endNode = graph.getNode(targetNodeId);
+
+
+            transferPattern.startTime = startNode.time;
+            transferPattern.transferPattern.add(0,startNode.stopId);
+            timeOrder.add(0,startNode.time);
+
+            transferPattern.transferPattern.add(targetNodeId.split("_")[1]);
+            transferPattern.endTime = endNode.time;
+            transferPattern.transferTime = transferPattern.endTime - transferPattern.startTime;
+
+            timeOrder.add(endNode.time);
+            transferPattern.timeOrder = timeOrder;
+        }catch (Exception e){
+            System.out.println("wrong transfer pattern s" + targetNodeId);
+        }
         return transferPattern;
     }
 
@@ -296,15 +346,15 @@ public class TEDijkstra {
 
 
     /**
-     * Computes the shortest path between two nodes in a {@link Graph}.
+     * Computes the shortest path between set of nodes to a target station{@link Graph}.
      *
-     * @param startNodeId  - the (source) node to start the search from
-     * @param targetNodeId - the (target) node to reach
+     * @param startNodeIds  - the (source) nodes to start the search from
+     * @param targetStation - the (target) station to reach
      * @return {@link Double#NEGATIVE_INFINITY} if no shortest path was found,
      * otherwise a value indicating the total cost of the shortest path
      */
-    public Map<String, TEActiveNode> setDijkstra(List<NodeOrder> startNodeIds, String startStopId, String targetStation) {
-
+    public ArrayList<String> setDijkstra(List<NodeOrder> startNodeIds, String startStopId, String targetStation) {
+        ArrayList<String> stationsFound = new ArrayList<>();
         this.visitedNodeMarks = new HashMap<String, Double>();
         double shortestPathCost = Double.MAX_VALUE;
         List<TEArc> nodeAdjacentArcs;
@@ -339,6 +389,7 @@ public class TEDijkstra {
 
             // Found target
             if (currentNode.getStopId().equals(targetStation)) {
+                stationsFound.add(currentNode.getId());
                 if(shortestPathCost > currentNode.getDist()){
                     endNodeId = currentNode.getId();
                     shortestPathCost = currentNode.getDist();
@@ -377,6 +428,103 @@ public class TEDijkstra {
             }
         }
 
-        return parents;
+        return stationsFound;
     }
+
+
+
+
+
+
+
+    public String DijkstraWithHubStations(String startNodeId, String startStopId, String targetNodeId) {
+        List<String> hubs = Stream.of("90000055","90000295","10000802","90000366","90000018","90000075","13001300","14001500","16040619").collect(Collectors.toList());
+        this.visitedNodeMarks = new HashMap<String, Double>();
+        double shortestPathCost = Double.MAX_VALUE;
+        List<TEArc> nodeAdjacentArcs;
+        int numSettledNodes = 0;
+        double distToAdjNode;
+        String endNodeId = "";
+
+        TEActiveNode activeNode;
+        TEActiveNode currentNode;
+
+
+
+        this.activeNodes = new PriorityQueue<TEActiveNode>(100, activeNodeComparator);
+        this.parents = new HashMap<String, TEActiveNode>();
+        activeNodes.add(new TEActiveNode(startNodeId, 0.0, null, startStopId));
+
+        String previousStation="";
+        while (activeNodes.size() != 0) {
+            currentNode = activeNodes.poll();
+            //System.out.println(currentNode.getId());
+            //System.out.println(currentNode.getDist());
+            if (isVisited(currentNode.getId())) {
+                continue;
+            }
+
+            // Mark as settled
+            visitedNodeMarks.put(currentNode.getId(), currentNode.getDist());
+
+
+            numSettledNodes++;
+
+            // Found target
+            if (currentNode.getStopId().equals(targetNodeId)) {
+                if(shortestPathCost > currentNode.getDist()){
+                    endNodeId = currentNode.getId();
+                    shortestPathCost = currentNode.getDist();
+                }
+            }
+            if(hubs.contains(currentNode.getStopId())){
+                endNodeId = currentNode.getId();
+                shortestPathCost = 0;
+            }
+            if(numSettledNodes == 10000){
+                break;
+            }
+
+            // Graph was apparently not connected
+            if (numSettledNodes > graph.getNumNodes()) {
+                System.out.println("There is no short path between startNode and targetNode");
+                break;
+            }
+
+            // Discover all adjacent nodes
+            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId());
+            // int currentLabel = graph.getNode(currentNode.getId()).getLabel();
+            if (nodeAdjacentArcs == null)
+                continue;
+            for (int i = 0; i < nodeAdjacentArcs.size(); i++) {
+                TEArc arc = nodeAdjacentArcs.get(i);
+                distToAdjNode = currentNode.getDist() + arc.getCost();
+                if (shortestPathCost <= distToAdjNode)
+                    continue;
+                // Ensure the node hasn't been settled
+                if (!parents.containsKey(arc.getHeadNodeID()) || parents.get(arc.getHeadNodeID()).getDist() > distToAdjNode) { // && currentLabel <= graph.getNode(arc.getHeadNodeId()).getLabel()) {
+                    activeNode = new TEActiveNode(arc.getHeadNodeID(), distToAdjNode, currentNode.getId(), arc.stopId);
+                    if (!parents.containsKey(arc.getHeadNodeID()))
+                        parents.put(arc.getHeadNodeID(), activeNode);
+                    else {
+                        parents.get(arc.getHeadNodeID()).setDist(distToAdjNode);
+                        parents.get(arc.getHeadNodeID()).setParent(currentNode.getId());
+                    }
+
+                    activeNodes.add(activeNode);
+                }
+            }
+        }
+
+        return shortestPathCost +";"+ endNodeId;
+        //return endNodeId;
+    }
+
+
+
+
+
+
+
 }
+

@@ -1,6 +1,7 @@
 package TimeExpanded;
 
 import basic.Node;
+import basic.Transfer;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -21,6 +22,7 @@ public class RunParser {
     public TEGraph g = new TEGraph();
     public  Map<String, String> stopNames = new ConcurrentHashMap<>();
     public List<String> stops = Collections.synchronizedList(new ArrayList<String>());
+    public HashMap<String, List<TransferPattern>> transferPatterns = new HashMap<>();
 
 
     public static Comparator NOcomparator = new Comparator<NodeOrder>() {
@@ -61,8 +63,9 @@ public class RunParser {
             reader.sequential(gtfsFeed);
             long estimatedTime = System.nanoTime() - startTime;
             System.out.println(estimatedTime);
-            stopNames = reader.stopNames;
-            stops = reader.stops;
+            this.stopNames = reader.stopNames;
+            this.stops = reader.stops;
+            this.transferPatterns = reader.transferPatterns;
 
             for (int j = 0; j < reader.stopTimes.size(); j++) {
                 if (j + 1 == reader.stopTimes.size())
@@ -100,6 +103,25 @@ public class RunParser {
                 nodeOrder(st_from.stopId, dateTimeDeparture, transferNodeId, 2);
                 nodeOrder(st_from.stopId, dateTimeDeparture, departureNodeId, 3);
 
+
+                //add transfer between station
+                if (reader.transfers.containsKey(st_to.stopId) ) {
+                    int k = 0;
+                    for (Transfer t : reader.transfers.get(st_to.stopId)){
+                        String stationTransferNode = "transfer" + k + j + "_" + st_to.stopId;
+                        g.createNode(stationTransferNode, st_to.stopId, dateTimeArrival, 2, st_to.tripId);
+                        nodeOrder(st_to.stopId, dateTimeArrival, stationTransferNode, 2);
+                        //g.addEdge(arrivalNodeId, stationTransferNode, 0, st_to.stopId);
+
+                        String arrivalNodeTransfer = "arrivalTrans"+ k + j + "_" + t.to_stop_id;
+                        g.createNode(arrivalNodeTransfer, t.to_stop_id, dateTimeArrival + t.transfer_time, 1, t.to_stop_id);
+                        nodeOrder(t.to_stop_id, dateTimeArrival + t.transfer_time, arrivalNodeTransfer, 1);
+                        g.addEdge(stationTransferNode, arrivalNodeTransfer, t.transfer_time, t.to_stop_id);
+                        k++;
+                    }
+                }
+
+
             }
 
 
@@ -116,14 +138,14 @@ public class RunParser {
                 futures.add(executor.submit( () -> {
                     for (int j = from; j < to; j++) {
                         TENode teNode = arrivalNodes.get(j);
-                        if (transfers.containsKey(teNode.stopId) ) {
-                            ArrayList<StopTime> stopTimes1 = transfers.get(teNode.stopId);
-                            for (StopTime m : stopTimes1) {
+                        if (reader.transfers.containsKey(teNode.stopId) ) {
+                            ArrayList<StopName> stopTimes1 = reader.transfers.get(teNode.stopId);
+                            for (StopName m : stopTimes1) {
                                 String stopId = m.stopId;
                                 int time = m.time;
                                 String nodeId = "transfer"+j+"_"+stopId;
                                 synchronized (lock){
-                                    g.createNode(nodeId, stopId, teNode.time+time, 3);
+                                    g.createNode(nodeId, stopId, teNode.time+time, 3, "0");
                                     g.addEdge(teNode.ID,nodeId, time, stopId);
                                     nodeOrder(stopId, teNode.time+time,nodeId, 3);
                                 }
@@ -135,8 +157,8 @@ public class RunParser {
 
             for(Future<?> future: futures){
                 future.get();
-            }*/
-
+            }
+*/
 
 
             //creates connections within station for waiting arcs
@@ -164,7 +186,7 @@ public class RunParser {
                             for (int j = i+1; j < se.size(); j++) {
                                 NodeOrder nextNode = se.get(j);
                                 if(nextNode.type == 2){
-                                    g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);
+                                    g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute+3, nextNode.stopId);
                                 }
                                 if (nextNode.type == 3){
                                     g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);
@@ -177,7 +199,7 @@ public class RunParser {
                             for (int j = i+1; j < se.size(); j++) {
                                 NodeOrder nextNode = se.get(j);
                                 if(nextNode.type == 2){
-                                    g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);
+                                    g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute+3, nextNode.stopId);
                                 }
                                 if (nextNode.type == 3){
                                     g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);

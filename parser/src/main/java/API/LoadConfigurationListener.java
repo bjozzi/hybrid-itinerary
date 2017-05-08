@@ -15,6 +15,7 @@ public class LoadConfigurationListener implements ServletContextListener {
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         ServletContext context = servletContextEvent.getServletContext();
         RunParser r = new RunParser();
+        r.run("gtfsIceland");
         //r.run("gtfs");
         context.setAttribute("graph", r.g);
         context.setAttribute("nodeOrders", r.nodeOrders);

@@ -24,9 +24,10 @@ public class GTFSReader {
     private  Set saturday = Collections.synchronizedSet(new HashSet<String>());
     private  Set sunday = Collections.synchronizedSet(new HashSet<String>());
     public  List<StopTimes> stopTimes = Collections.synchronizedList(new ArrayList<StopTimes>());
-    public  Map<String, ArrayList<StopName>> transfers = new ConcurrentHashMap<>();
+    public  Map<String, ArrayList<Transfer>> transfers = new ConcurrentHashMap<>();
     public  Map<String, String> stopNames = new ConcurrentHashMap<>();
     public List<String> stops = Collections.synchronizedList(new ArrayList<String>());
+    public HashMap<String, List<TransferPattern>> transferPatterns = new HashMap<>();
 
 
 public void sequential(String gtfsFeed) {
@@ -86,7 +87,7 @@ public void sequential(String gtfsFeed) {
 
         try (Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\stops.txt"))) {
             lines.parallel().map(line -> Arrays.asList(line.split(","))).skip(1).forEach(x->{
-                if(gtfsFeed.contains("Ireland")){
+                if(gtfsFeed.contains("Ireland") ||gtfsFeed.contains("Dublin") ){
                     stopNames.put(x.get(0).replace("\"", ""), x.get(1).replace("\"", ""));
                     stops.add(x.get(0).replace("\"", ""));
                 }else{
@@ -99,7 +100,6 @@ public void sequential(String gtfsFeed) {
         }
 
 
-        /*if(!gtfsFeed.contains("Iceland")){
             csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\transfers.txt");
             first = true;
             while (csv.readNextLine()) {
@@ -108,9 +108,24 @@ public void sequential(String gtfsFeed) {
                     continue;
                 }
                 Transfer t = new Transfer(csv.getItem(0), csv.getItem(1), csv.getItem(2), csv.getItem(3));
+                t.transfer_time = Double.parseDouble(t.min_transfer_time)/60;
                 fillTransfer(t, transfers);
             }
-        }*/
+
+
+        try(Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Documents\\TransferPatterns2.txt"))){
+                lines.parallel().map(line -> Arrays.asList(line.split("-"))).forEach( x ->{
+                    TransferPattern p = new TransferPattern(x.get(0), x.get(1));
+                    if(transferPatterns.containsKey(p.startStation)){
+                        transferPatterns.get(p.startStation).add(p);
+                    }else {
+                        List<TransferPattern> pattern = new ArrayList<TransferPattern>();
+                        pattern.add(p);
+                        transferPatterns.put(p.startStation, pattern);
+                    }
+                });
+        }
+
 
 
     } catch (FileNotFoundException e) {
@@ -210,21 +225,21 @@ public void sequential(String gtfsFeed) {
         }
     }
 
-    private static void fillTransfer(Transfer t, Map<String, ArrayList<StopName>> transfers) {
+    private static void fillTransfer(Transfer t, Map<String, ArrayList<Transfer>> transfers) {
         if (transfers.containsKey(t.from_stop_id)) {
-            transfers.get(t.from_stop_id).add(new StopName(t.to_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
+            transfers.get(t.from_stop_id).add(t);
         } else {
-            ArrayList<StopName> hm = new ArrayList<>();
-            hm.add(new StopName(t.to_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
-            transfers.put(t.from_stop_id, hm);
+            ArrayList<Transfer> trans = new ArrayList<>();
+            trans.add(t);
+            transfers.put(t.from_stop_id, trans);
         }
-        if (transfers.containsKey(t.to_stop_id)) {
+        /*if (transfers.containsKey(t.to_stop_id)) {
             transfers.get(t.to_stop_id).add(new StopName(t.from_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
         } else {
             ArrayList<StopName> hm = new ArrayList<>();
             hm.add(new StopName(t.from_stop_id, Integer.parseInt(t.min_transfer_time) / 60));
             transfers.put(t.to_stop_id, hm);
-        }
+        }*/
     }
 
 
@@ -232,7 +247,7 @@ public void sequential(String gtfsFeed) {
         return stopTimes;
     }
 
-    public  Map<String, ArrayList<StopName>> getTransfers() {
+    public  Map<String, ArrayList<Transfer>> getTransfers() {
         return transfers;
     }
 }
