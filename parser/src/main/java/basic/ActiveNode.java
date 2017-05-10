@@ -8,6 +8,15 @@ public class ActiveNode  implements Comparable{
     private Double dist;
     private String parent;
     private String trip_id;
+    private double arrivalTime;
+
+    public ActiveNode(String id, Double dist, String parent, String trip_id, double arrivalTime) {
+        this.id = id;
+        this.dist = dist;
+        this.parent = parent;
+        this.trip_id = trip_id;
+        this.arrivalTime = arrivalTime;
+    }
 
     public ActiveNode() {
     }
@@ -65,4 +74,12 @@ public class ActiveNode  implements Comparable{
         return 0;
     }
 
+    public void setArrivalTime(double arrivalTime) {
+        this.arrivalTime = arrivalTime;
+    }
+
+    public double getArrivalTime() {
+
+        return arrivalTime;
+    }
 }

@@ -53,17 +53,19 @@ public class TDDGraph {
                             return false;
                     }).collect(Collectors.toList());
             return openConnections;
+        } catch (Exception e) { // no adjacent nodes, by making the filter more complicated it doesn't catch null anymore
+            return null;
         }
-        catch (Exception e){ // no adjacent nodes, by making the filter more complicated it doesn't catch null anymore
-            return null;}
 
     }
 
-    public List<TDArc> getadjacentArcForBackwardsSearch(String nodeID, Double dist, String tripId) {
+    public List<TDArc> getadjacentArcForBackwardsSearch(String nodeID, Double dist, String tripId, Double endTime) {
         try {
             List<TDArc> openConnections = adjacentArcs.get(nodeID).stream().parallel().filter(
                     x -> {
                         double distance = dist;
+                        if (x.departureTime < endTime)
+                            return false;
                         if (!tripId.equals(x.tripID) && !tripId.isEmpty())
                             distance = distance - TransferTime;
                         if (x.departureTime <= distance || x.departureTime == -1)
@@ -71,10 +73,11 @@ public class TDDGraph {
                         else
                             return false;
                     }).collect(Collectors.toList());
+
             return openConnections;
+        } catch (Exception e) { // no adjacent nodes, by making the filter more complicated it doesn't catch null anymore
+            return null;
         }
-        catch (Exception e){ // no adjacent nodes, by making the filter more complicated it doesn't catch null anymore
-            return null;}
 
     }
 

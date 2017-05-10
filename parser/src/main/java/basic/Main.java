@@ -3,6 +3,7 @@ package basic;
 import TimeDependent.TDArc;
 import TimeDependent.TDDGraph;
 import TimeDependent.TDDijkstra;
+import TimeExpanded.TEActiveNode;
 
 import java.io.EOFException;
 import java.io.FileNotFoundException;
@@ -72,6 +73,7 @@ public class Main {
             //  BasicDijkstra(Stops, Transfers, StopTimes);
             TDDDijkstra(Stops, Transfers, StopTimes, stopNames);
             System.out.println("Done with everything");
+            System.exit(0);
         } catch (EOFException e1) {
             e1.printStackTrace();
         } catch (FileNotFoundException e1) {
@@ -175,17 +177,17 @@ public class Main {
                         List<TDArc> ListOfAdjacentArcs = adjacentArcs.get(fromNode);
                         for (TDArc arc : ListOfAdjacentArcs) {
                             synchronized (_lock) {
+                                TDArc tdAr = TDArc.createArc(fromNode, arc.getCost(), arc.departureTime + arc.getCost(), arc.tripID);
                                 if (switchedArcs.containsKey(arc.getHeadNodeID())) {
-                                    switchedArcs.get(arc.getHeadNodeID()).add(TDArc.createArc(fromNode, arc.getCost(), 1440 - arc.departureTime + arc.getCost(), arc.tripID));
+                                    switchedArcs.get(arc.getHeadNodeID()).add(tdAr);
                                 } else {
                                     List<TDArc> adjArcs = new ArrayList<>();
-                                    adjArcs.add(TDArc.createArc(fromNode, arc.getCost(), 1440 - arc.departureTime + arc.getCost(), arc.tripID));
+                                    adjArcs.add(tdAr);
                                     switchedArcs.put(arc.getHeadNodeID(), adjArcs);
                                 }
                             }
                         }
                     }
-
                 }));
             }
             for (Future<?> future : futures) {
@@ -206,9 +208,7 @@ public class Main {
                     for (double k = time + from; k < time + to; k++)
                         synchronized (_lock) {
                             Map<String, ActiveNode> path = d.computeShortestPathTree(nodeId, k, timeInMinutes);
-                            if (!trees.contains(path)) {
-                                trees.add(path);
-                            }
+                            trees.add(path);
                         }
 
                 }));
@@ -219,11 +219,14 @@ public class Main {
 
             List<Map<String, ActiveNode>> reduced = TreesContainingStartStation(trees, startNode);
 
+
+            System.out.println(shortestPathName(targetNode, startNode, reduced.get(0), stopNames));
+
             PrintWriter writer = new PrintWriter("trees.txt", "UTF-8");
 
 
             for (Map<String, ActiveNode> tre : reduced) {
-                tre.values().stream().forEach(x -> writer.println(stopNames.get(x.getId()) + ";" + x.getParent() + ";" + x.getDist()));
+                tre.values().stream().forEach(x -> writer.println(stopNames.get(x.getId()) + ";" + stopNames.get(x.getParent()) + ";" + x.getArrivalTime()));
                 writer.println("------------------------");
             }
             writer.close();
@@ -237,21 +240,62 @@ public class Main {
         }
     }
 
+    public static String shortestPathName(String startNodeId, String targetNodeId, Map<String, ActiveNode> parents, Map<String, String> stopNames) {
+
+        String pathName = "";
+        String currentNodeId;
+
+        currentNodeId = targetNodeId;
+
+        pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getDist());
+        while (currentNodeId != startNodeId) {
+            currentNodeId = parents.get(currentNodeId).getParent();
+            pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getDist()) + "->" + pathName;
+            if (currentNodeId == null)
+                break;
+        }
+
+        return pathName;
+    }
+
     public static List<Map<String, ActiveNode>> TreesContainingStartStation(List<Map<String, ActiveNode>> trees, String nodeID) {
         List<Integer> hash = new ArrayList<>();
         double minutes = TimeInMinutes(new java.util.Date());
         List<Map<String, ActiveNode>> containment = new ArrayList<>();
         for (Map<String, ActiveNode> tree : trees) {
-            ActiveNode an = tree.get(nodeID);
-            if (an != null && an.getDist() >= minutes) {
-                int code = tree.values().hashCode();
-                if (!hash.contains(code)) {
-                    containment.add(tree);
-                    hash.add(code);
+            if (!isInTheList(containment, tree))
+                containment.add(tree);
+        }
+
+        return containment;
+    }
+
+    public static boolean isInTheList(List<Map<String, ActiveNode>> containment, Map<String, ActiveNode> tree) {
+        boolean toReturn = false;
+        if (containment.size() == 0)
+            return false;
+        else {
+            for (Map<String, ActiveNode> cont : containment) {
+                if (tree.size() != cont.size())
+                    continue;
+                int count = 0;
+                for (ActiveNode node : tree.values()) {
+
+                    if (cont.values().stream().parallel().anyMatch(x -> x.getId().equals(node.getId())
+                            && x.getParent().equals(node.getParent())
+                            && x.getTrip_id().equals(node.getTrip_id())
+                            && x.getDist().equals(node.getDist()))) {
+                        count++;
+                    } else
+                        break;
+                }
+                if (count == tree.size()) {
+                    toReturn = true;
+                    break;
                 }
             }
         }
-        return containment;
+        return toReturn;
     }
 
     public static double TimeInMinutes(Date depTime) {

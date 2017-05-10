@@ -13,6 +13,12 @@ public class TDDijkstra {
     private TDDGraph graph;
     private Map<String, Double> visitedNodeMarks;
     private PriorityQueue<ActiveNode> activeNodes;
+
+    public void setParents(Map<String, ActiveNode> parents) {
+        this.parents = parents;
+    }
+
+    private double TimeAtTheNode = 0;
     private Map<String, ActiveNode> parents;
 
     private Comparator<ActiveNode> activeNodeComparator;
@@ -24,12 +30,15 @@ public class TDDijkstra {
     private TDDijkstra() {
         this.activeNodeComparator = new Comparator<ActiveNode>() {
             public int compare(ActiveNode o1, ActiveNode o2) {
-                if (o1.getDist() - o2.getDist() < 0)
+                double o1FullDist = TimeAtTheNode - o1.getDist();
+                double o2FullDist = TimeAtTheNode - o2.getDist();
+                if (o1FullDist - o2FullDist < 0)
                     return -1;
-                else if (o1.getDist() - o2.getDist() > 0)
+                else if (o1FullDist - o2FullDist > 0)
                     return 1;
                 else
                     return 0;
+
             }
         };
         this.visitedNodeMarks = new HashMap<String, Double>();
@@ -57,7 +66,6 @@ public class TDDijkstra {
         ActiveNode activeNode;
         ActiveNode currentNode;
 
-
         this.activeNodes = new PriorityQueue<ActiveNode>(100, activeNodeComparator);
         this.parents = new HashMap<String, ActiveNode>();
         activeNodes.add(new ActiveNode(startNodeId, startTime + 0.0, null));
@@ -68,7 +76,6 @@ public class TDDijkstra {
             if (isVisited(currentNode.getId())) {
                 continue;
             }
-
             // Mark as settled
             visitedNodeMarks.put(currentNode.getId(), currentNode.getDist());
 
@@ -79,9 +86,6 @@ public class TDDijkstra {
                 shortestPathCost = currentNode.getDist();
                 //break;
             }
-         /* if(numSettledNodes == 1000)
-          {return currentNode.getId();
-          }*/
 
             // Graph was apparently not connected
             if (numSettledNodes > graph.getNumNodes()) {
@@ -90,13 +94,13 @@ public class TDDijkstra {
             }
 
             // Discover all adjacent nodes
-            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId(), currentNode.getDist(),currentNode.getTrip_id());
+            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId(), currentNode.getDist(), currentNode.getTrip_id());
             // int currentLabel = graph.getNode(currentNode.getId()).getLabel();
             if (nodeAdjacentArcs == null)
                 continue;
             for (int i = 0; i < nodeAdjacentArcs.size(); i++) {
                 TDArc arc = nodeAdjacentArcs.get(i);
-                distToAdjNode = currentNode.getDist() + arc.getFullCost(currentNode.getDist(), currentNode.getTrip_id());
+                distToAdjNode = currentNode.getDist() + arc.getFullCost(currentNode.getDist(), currentNode.getTrip_id()) + arc.getCost();
                 if (shortestPathCost <= distToAdjNode)
                     continue;
                 // Ensure the node hasn't been settled
@@ -127,10 +131,9 @@ public class TDDijkstra {
         ActiveNode activeNode;
         ActiveNode currentNode;
 
-
         this.activeNodes = new PriorityQueue<ActiveNode>(100, activeNodeComparator);
         this.parents = new HashMap<String, ActiveNode>();
-        activeNodes.add(new ActiveNode(startNodeId, startTime + 0.0, null));
+        activeNodes.add(new ActiveNode(startNodeId, startTime + 0.0, null, "", startTime));
 
         while (activeNodes.size() != 0) {
             currentNode = activeNodes.poll();
@@ -142,15 +145,6 @@ public class TDDijkstra {
             // Mark as settled
             visitedNodeMarks.put(currentNode.getId(), currentNode.getDist());
 
-            //numSettledNodes++;
-            // Found target
-            /* if (currentNode.getId().equals(targetNodeId)) {
-                shortestPathCost = currentNode.getDist();
-                //break;
-            }*/
-            /* if(numSettledNodes == 1000)
-            {return currentNode.getId();
-            }*/
             // Graph was apparently not connected
             if (numSettledNodes > graph.getNumNodes()) {
                 System.out.println("There is no short path between startNode and targetNode");
@@ -158,24 +152,25 @@ public class TDDijkstra {
             }
 
             // Discover all adjacent nodes
-            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId(), currentNode.getDist(), currentNode.getTrip_id());
-            // int currentLabel = graph.getNode(currentNode.getId()).getLabel();
+            nodeAdjacentArcs = this.graph.getadjacentArcForBackwardsSearch(currentNode.getId(), currentNode.getArrivalTime(), currentNode.getTrip_id(), endTime);
             if (nodeAdjacentArcs == null)
                 continue;
             for (int i = 0; i < nodeAdjacentArcs.size(); i++) {
                 TDArc arc = nodeAdjacentArcs.get(i);
-                distToAdjNode = currentNode.getDist() + arc.getFullCost(currentNode.getDist(), currentNode.getTrip_id());
-                if (distToAdjNode < endTime)
-                    continue;
-               /* if (shortestPathCost <= distToAdjNode)
-                    continue;*/
+                distToAdjNode = arc.getFullCost(currentNode.getArrivalTime(), currentNode.getTrip_id()) + arc.getCost();
                 // Ensure the node hasn't been settled
-                if (!parents.containsKey(arc.getHeadNodeID()) || parents.get(arc.getHeadNodeID()).getDist() > distToAdjNode) { // && currentLabel <= graph.getNode(arc.getHeadNodeId()).getLabel()) {
-                    activeNode = new ActiveNode(arc.getHeadNodeID(), distToAdjNode, currentNode.getId(), arc.tripID);
+                if (!parents.containsKey(arc.getHeadNodeID()) || parents.get(arc.getHeadNodeID()).getDist() > distToAdjNode) {
+                    double depTime = arc.departureTime;
+                    if(depTime == -1)
+                        depTime = currentNode.getArrivalTime();
+                    activeNode = new ActiveNode(arc.getHeadNodeID(), distToAdjNode, currentNode.getId(), arc.tripID, depTime - arc.getCost());
+                    if((activeNode.getArrivalTime()+"").equals("0.0") )
+                        continue;
                     if (!parents.containsKey(arc.getHeadNodeID()))
                         parents.put(arc.getHeadNodeID(), activeNode);
                     else {
                         parents.get(arc.getHeadNodeID()).setDist(distToAdjNode);
+                        parents.get(arc.getHeadNodeID()).setArrivalTime(activeNode.getArrivalTime());
                         parents.get(arc.getHeadNodeID()).setParent(currentNode.getId());
                     }
                     activeNodes.add(activeNode);

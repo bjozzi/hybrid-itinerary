@@ -46,9 +46,9 @@ public class TDArc {
     public double getFullCost(double TimeNow, String trip_id) {
         double Waiting = 0;
         if (departureTime == -1)
-            Waiting = 0;//cost;
+            Waiting = 0;
         else
-            Waiting = departureTime - TimeNow;// + cost;
+            Waiting = departureTime - TimeNow;
         if (Waiting < 0)
             Waiting = Waiting * (-1);
         setFullCost(Waiting);
