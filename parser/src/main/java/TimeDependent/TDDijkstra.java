@@ -139,7 +139,7 @@ public class TDDijkstra {
 
         this.activeNodes = new PriorityQueue<ActiveNode>(100, activeNodeComparator);
         this.parents = new HashMap<String, ActiveNode>();
-        activeNode = new ActiveNode(startNodeId,  0.0, null, "", startTime);
+        activeNode = new ActiveNode(startNodeId, 0.0, null, "", startTime);
         activeNodes.add(activeNode);
         parents.put(activeNode.getId(), activeNode);
         parents.get(activeNode.getId()).setParent("");
@@ -170,7 +170,7 @@ public class TDDijkstra {
                 Double time = depTime.getValue();
                 if (depTime.getValue() == -1)
                     time = currentNode.getArrivalTime();
-                distToAdjNode = currentNode.getArrivalTime() - time + arc.getCost();
+                distToAdjNode = currentNode.getDist() + currentNode.getArrivalTime() - time + arc.getCost();
                 // Ensure the node hasn't been settled
                 if (!parents.containsKey(arc.getHeadNodeID()) || parents.get(arc.getHeadNodeID()).getDist() > distToAdjNode) {
                     activeNode = new ActiveNode(arc.getHeadNodeID(), distToAdjNode, currentNode.getId(), depTime.getKey(), time - arc.getCost());

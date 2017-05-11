@@ -223,13 +223,13 @@ public class Main {
             List<Map<String, ActiveNode>> reduced = TreesContainingStartStation(trees, startNode);
 
 
-            //System.out.println(shortestPathName(targetNode, startNode, reduced.get(0), stopNames));
+            System.out.println(shortestPathName(targetNode, startNode, reduced.get(0), stopNames));
 
             PrintWriter writer = new PrintWriter("trees.txt", "UTF-8");
 
             for (Map<String, ActiveNode> tre : reduced) {
 
-                tre.values().stream().forEach(x -> writer.println(stopNames.get(x.getId()) + ";" + x.getParent() + ";" + x.getArrivalTime()));
+                tre.values().stream().forEach(x -> writer.println(stopNames.get(x.getId()) + ";" + stopNames.get(x.getParent()) + ";" + x.getArrivalTime()));
                 writer.println("------------------------");
             }
             writer.close();
@@ -250,10 +250,10 @@ public class Main {
 
         currentNodeId = targetNodeId;
 
-        pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getDist());
+        pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getArrivalTime());
         while (currentNodeId != startNodeId) {
             currentNodeId = parents.get(currentNodeId).getParent();
-            pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getDist()) + "->" + pathName;
+            pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getArrivalTime()) + "->" + pathName;
             if (currentNodeId == null)
                 break;
         }
@@ -272,6 +272,9 @@ public class Main {
 
     public static boolean isInTheList(List<Map<String, ActiveNode>> containment, Map<String, ActiveNode> tree, String nodeID) {
         boolean isIn = false;
+        //For checking if in the tree there is the start node - if there is none it returns true and isn't added to the list
+        if (!tree.values().stream().anyMatch(x -> x.getId().equals(nodeID)))
+            return true;
         for (Map<String, ActiveNode> cont : containment) {
             if (tree.size() != cont.size())
                 continue;
