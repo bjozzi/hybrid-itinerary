@@ -40,45 +40,17 @@ public class TDDGraph {
         return nodes;
     }
 
-    public List<TDArc> getadjacentArc(String nodeID, Double dist, String tripId) {
-        try {
-            List<TDArc> openConnections = adjacentArcs.get(nodeID).stream().parallel().filter(
-                    x -> {
-                        double distance = dist;
-                        if (!tripId.equals(x.tripID) && !tripId.isEmpty())
-                            distance = distance + TransferTime;
-                        if (x.departureTime >= distance || x.departureTime == -1)
-                            return true;
-                        else
-                            return false;
-                    }).collect(Collectors.toList());
-            return openConnections;
-        } catch (Exception e) { // no adjacent nodes, by making the filter more complicated it doesn't catch null anymore
-            return null;
-        }
-
+    public List<TDArc> getadjacentArc(String nodeID, double timeNow) {
+        List<TDArc> adjacentLaterArcs = adjacentArcs.get(nodeID).stream().filter(x -> x.departureTime.values().stream().anyMatch(y -> y >= timeNow)).collect(Collectors.toList());
+        return adjacentLaterArcs;
+    }
+    public List<TDArc> getadjacentArcBack(String nodeID, double timeNow) {
+        List<TDArc> adjacentLaterArcs = adjacentArcs.get(nodeID).stream().filter(x -> x.departureTime.values().stream().anyMatch(y -> y <= timeNow)).collect(Collectors.toList());
+        return adjacentLaterArcs;
     }
 
-    public List<TDArc> getadjacentArcForBackwardsSearch(String nodeID, Double dist, String tripId, Double endTime) {
-        try {
-            List<TDArc> openConnections = adjacentArcs.get(nodeID).stream().parallel().filter(
-                    x -> {
-                        double distance = dist;
-                        if (x.departureTime < endTime)
-                            return false;
-                        if (!tripId.equals(x.tripID) && !tripId.isEmpty())
-                            distance = distance - TransferTime;
-                        if (x.departureTime <= distance || x.departureTime == -1)
-                            return true;
-                        else
-                            return false;
-                    }).collect(Collectors.toList());
-
-            return openConnections;
-        } catch (Exception e) { // no adjacent nodes, by making the filter more complicated it doesn't catch null anymore
-            return null;
-        }
-
+    public List<TDArc> getadjacentArc(String nodeID) {
+        return adjacentArcs.get(nodeID);
     }
 
     public void setAdjacentArcs(Map<String, List<TDArc>> adjacentArcs) {
@@ -107,7 +79,10 @@ public class TDDGraph {
         }
 
         TDArc uarc = TDArc.createArc(v, cost, DepartureTime, tripID);
-        addArc(u, uarc);
+        if (this.getadjacentArc(u) != null && this.getadjacentArc(u).stream().anyMatch(x -> x.getHeadNodeID().equals(v))) {
+            this.getadjacentArc(u).stream().filter(x -> x.getHeadNodeID().equals(v)).forEach(y -> y.departureTime.put(tripID, DepartureTime));
+        } else
+            addArc(u, uarc);
     }
 
     public int getNumNodes() {
