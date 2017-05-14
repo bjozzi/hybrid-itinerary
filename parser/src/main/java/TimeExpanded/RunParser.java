@@ -57,6 +57,7 @@ public class RunParser {
 
     public void run(String gtfsFeed) {
         int js = 0;
+        int nodeCount=0, edgeCount = 0;
         try {
             long startTime = System.nanoTime();
             GTFSReader reader = new GTFSReader();
@@ -96,8 +97,10 @@ public class RunParser {
                 g.createNode(arrivalNodeId, st_to.stopId, dateTimeArrival, 1, st_to.tripId);
                 g.createNode(transferNodeId, st_from.stopId, dateTimeDeparture, 2, st_from.tripId);
                 g.createNode(departureNodeId, st_from.stopId, dateTimeDeparture, 3, st_from.tripId);
+                nodeCount+=3;
                 g.addEdge(departureNodeId, arrivalNodeId, timeBetween, st_to.stopId);
                 g.addEdge(transferNodeId, departureNodeId, 0, st_from.stopId);
+                edgeCount += 2;
 
                 nodeOrder(st_to.stopId, dateTimeArrival, arrivalNodeId, 1);
                 nodeOrder(st_from.stopId, dateTimeDeparture, transferNodeId, 2);
@@ -118,6 +121,8 @@ public class RunParser {
                         nodeOrder(t.to_stop_id, dateTimeArrival + t.transfer_time, arrivalNodeTransfer, 1);
                         g.addEdge(stationTransferNode, arrivalNodeTransfer, t.transfer_time, t.to_stop_id);
                         k++;
+                        nodeCount += 2;
+                        edgeCount++;
                     }
                 }
 
@@ -187,9 +192,11 @@ public class RunParser {
                                 NodeOrder nextNode = se.get(j);
                                 if(nextNode.type == 2){
                                     g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute+3, nextNode.stopId);
+                                    edgeCount++;
                                 }
                                 if (nextNode.type == 3){
                                     g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);
+                                    edgeCount++;
                                     break;
                                 }
                             }
@@ -200,9 +207,11 @@ public class RunParser {
                                 NodeOrder nextNode = se.get(j);
                                 if(nextNode.type == 2){
                                     g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute+3, nextNode.stopId);
+                                    edgeCount++;
                                 }
                                 if (nextNode.type == 3){
                                     g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);
+                                    edgeCount++;
                                     break;
                                 }
                             }
@@ -217,8 +226,10 @@ public class RunParser {
                 }
                 k++;
 
-            }
 
+            }
+            System.out.println("nodeCount: " + nodeCount);
+            System.out.println("edgeCount: " + edgeCount);
         } catch (Exception e) {
             System.out.println(js);
             e.printStackTrace();
