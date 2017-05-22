@@ -5,6 +5,30 @@
     <title>Title</title>
 </head>
 <body>
-EHEHHEHE
+<div id="json"></div>
 </body>
+<script type="application/javascript">
+    var request = new XMLHttpRequest();
+    request.open('GET', 'http://localhost:8080/parser_war_exploded/helloworld/tp/dsdsfsdf', true);
+
+    request.onload = function() {
+        if (request.status >= 200 && request.status < 400) {
+            // Success!
+            var data = JSON.parse(request.responseText);
+            var theDiv = document.getElementById("json");
+            var content = document.createTextNode(data);
+            theDiv.appendChild(content);
+            parent.appendChild(data);
+        } else {
+            // We reached our target server, but it returned an error
+
+        }
+    };
+
+    request.onerror = function() {
+        // There was a connection error of some sort
+    };
+
+    request.send();
+</script>
 </html>

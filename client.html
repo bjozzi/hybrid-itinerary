@@ -5,26 +5,40 @@
     <meta charset="utf-8">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.5/pako_deflate.js"></script>   
     <style>
     </style>
   </head>
   <body>
-    <div id='map' ></div>
-    <div id='json' ></div>
 
-    <div id='dropdown'>
-    <select>
-    </select>
+    <div ng-app="myApp" ng-controller="myCtrl">
+        <h1 ng-click="changeName()">{{firstname}}</h1>
+        <select ng-model="selectedStation" ng-options="x.name for x in stations">
+        </select>
+        <p>{{selectedStation}}</p>
+        <p>{{path}}</p>
     </div>
 
+    <script>
+    var app = angular.module('myApp', []);
+    app.controller('myCtrl', function($scope, $http) {
+        $scope.firstname = "John";
+        $scope.changeName = function() {
+            $scope.firstname = "Nelly";
+        }
 
-<script>
+        var trip = "http://localhost:8080/parser_war_exploded/helloworld/tdd?start=90000018&target=90000295";
+        $http.get(trip)
+        .then(function(response) {
+            console.log(response);
+            $scope.path = String.fromCharCode.apply(null, new Uint16Array(response.data));
+        });
 
-var trip = "http://localhost:8080/parser_war_exploded/helloworld/tp/dsdsfsdf";
-$.get(trip, function(data) {
-        console.log(data);     
-        var strengur = JSON.stringify(data);
-        document.getElementById("json").innerHTML = strengur;
+        $scope.stations = stopNames;
+
+        var stop = getStopName(90000018);
+        console.log(getStopName(90000018).name);
     });
 
 
@@ -41,6 +55,14 @@ $.get(trip, function(data) {
 
 */
 
+var getStopName = function(stopId){
+    return stopNames.find(function(value, index){
+        if(value.stopId === stopId){
+            console.log(value);
+            return value;
+        }
+    });
+}
 
 
 var stopNames = [
@@ -1246,14 +1268,8 @@ var stopNames = [
 ];
 
 
-for(var i=0; i< stopNames.length;i++)
-{
-//creates option tag
-  jQuery('<option/>', {
-        value: stopNames[i].stopId,
-        html: stopNames[i].name
-        }).appendTo('#dropdown select'); //appends to select if parent div has id dropdown
-}
+
+
         </script>
   </body>
 </html>

@@ -1,16 +1,21 @@
+import TimeDependent.TDDijkstra;
 import TimeExpanded.*;
+import basic.ActiveNode;
 import basic.Main;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import javax.servlet.ServletContext;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
+import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.*;
+import java.util.zip.GZIPOutputStream;
 
 import static TimeExpanded.RunParser.NOcomparator;
 import static TimeExpanded.RunParser.TimeInMinutes;
@@ -50,10 +55,10 @@ public class HelloWorld {
 
 
     @GET
-    @Path("/tp/{param}")
+    @Path("/tp")
     // The Java method will produce content identified by the MIME Media type "text/plain"
     @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-    public String getTransferPattern(@PathParam("param") String profile) {
+    public String getTransferPattern(@QueryParam("start") String startId, @QueryParam("target") String targetId) {
 
         TEGraph g = (TEGraph) context.getAttribute("graph");
         HashMap<String, List<TransferPattern>> transferPatterns = (HashMap<String, List<TransferPattern>>) context.getAttribute("transferPatterns");
@@ -65,9 +70,9 @@ public class HelloWorld {
         Map<List<String>, List<List<Double>>> tps = new HashMap<>();
 
         String result = "";
-        String stopId = "90000317";
-        String targetNodeId = "90000748";//"90000295";
-        ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) nodeOrders.get(stopId).stream().parallel()
+        //String stopId = "90000317";
+        //String targetNodeId = "90000748";//"90000295";
+        ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) nodeOrders.get(startId).stream().parallel()
                 .filter(x->x.type == 2 )
                 .filter(x->x.minute >= TimeInMinutes(new Date()) ).distinct().sorted(NOcomparator).collect(toList());
 
@@ -77,7 +82,7 @@ public class HelloWorld {
         String endNodeId = "";
         for(NodeOrder n : se){
             String nodeId = n.nodeId;
-            String dk = d.DijkstraWithHubStations(nodeId, stopId, targetNodeId);
+            String dk = d.DijkstraWithHubStations(nodeId, startId, targetId);
             endNodeId = dk.split(";")[1];
             String dist = dk.split(";")[0];
             double startTime = g.getNode(nodeId).time;
@@ -97,7 +102,7 @@ public class HelloWorld {
                 result += "######################################################################################";
             }
             i++;
-            if(i>5)break;
+            //if(i>5)break;
         }
 
         Map<List<String>, List<List<Double>>> localtps = new HashMap<>();
@@ -112,7 +117,7 @@ public class HelloWorld {
         }
 
         if(global){
-            for(TransferPattern tp : transferPatterns.get(endNodeId.split("_")[1]).stream().filter(z->z.endStation.equals(targetNodeId)).collect(toList())){
+            for(TransferPattern tp : transferPatterns.get(endNodeId.split("_")[1]).stream().filter(z->z.endStation.equals(targetId)).collect(toList())){
                 tps.put(tp.transferPattern, tp.timeOrders);
             }
         }
@@ -128,6 +133,52 @@ public class HelloWorld {
         String json = gson.toJson(data);
 
         return json;
+    }
+
+    @GET
+    @Path("/tdd")
+    // The Java method will produce content identified by the MIME Media type "text/plain"
+    //@Produces(MediaType.CHARSET_PARAMETER+ ";charset=utf-8")
+    public String timeDependent(@QueryParam("start") String startNode, @QueryParam("target") String targetNode, ContainerResponseContext responseContext) throws ParseException {
+        TDDijkstra d = (TDDijkstra) context.getAttribute("tddGraph");
+        Map<String, String> stopNames = (Map<String, String>) context.getAttribute("stopNames");
+        Main tdd = (Main) context.getAttribute("mainTD");
+        Date timeNow = new Date();
+        double timeInMinutes = TimeInMinutes(timeNow);
+        Double arrivalTime = d.computeShortestPath(startNode, targetNode, timeInMinutes);
+
+
+        List<Map<String, ActiveNode>> reduced = tdd.ISPT(startNode, targetNode, timeInMinutes, arrivalTime);
+
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("tree", reduced);
+        data.put("path", d.shortestPathName(startNode, targetNode, stopNames));
+        //data.put("path", result);
+
+        Gson gson = new GsonBuilder().create();
+        String json = gson.toJson(data);
+
+
+        return compress(json);
+    }
+
+
+    public String compress(String str) {
+        if (str == null || str.length() == 0) {
+            return str;
+        }
+        String result = "";
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        GZIPOutputStream gzip = null;
+        try {
+            gzip = new GZIPOutputStream(out);
+            gzip.write(str.getBytes());
+            gzip.close();
+            result = out.toString("ISO-8859-1");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
 

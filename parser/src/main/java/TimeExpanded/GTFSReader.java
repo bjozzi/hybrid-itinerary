@@ -2,6 +2,7 @@ package TimeExpanded;
 
 import basic.CSVParser;
 import basic.Transfer;
+import basic.stop;
 
 import java.io.EOFException;
 import java.io.FileNotFoundException;
@@ -26,7 +27,7 @@ public class GTFSReader {
     public  List<StopTimes> stopTimes = Collections.synchronizedList(new ArrayList<StopTimes>());
     public  Map<String, ArrayList<Transfer>> transfers = new ConcurrentHashMap<>();
     public  Map<String, String> stopNames = new ConcurrentHashMap<>();
-    public List<String> stops = Collections.synchronizedList(new ArrayList<String>());
+    public List<stop> stops = Collections.synchronizedList(new ArrayList<stop>());
     public HashMap<String, List<TransferPattern>> transferPatterns = new HashMap<>();
 
 
@@ -68,36 +69,21 @@ public void sequential(String gtfsFeed) {
         }
 
         //read stop times and fill in map of stopTimes
-        csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\stop_times.txt");
-        first = true;
-        String trip_id;
-        while (csv.readNextLine()) {
-            if (first) {
-                first = false;
-                continue;
-            }
-            trip_id = csv.getItem(0);
-            if(trips.contains(trip_id)){
-                StopTimes st = new StopTimes(trip_id, csv.getItem(1), csv.getItem(2), csv.getItem(3), Integer.parseInt(csv.getItem(4)));
-                st.tripId = trip_id;
-                stopTimes.add(st);
-            }
-        }
-
-
-        try (Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\stops.txt"))) {
-            lines.parallel().map(line -> Arrays.asList(line.split(","))).skip(1).forEach(x->{
-                if(gtfsFeed.contains("Ireland") ||gtfsFeed.contains("Dublin") ){
-                    stopNames.put(x.get(0).replace("\"", ""), x.get(1).replace("\"", ""));
-                    stops.add(x.get(0).replace("\"", ""));
-                }else{
-                    stopNames.put(x.get(0), x.get(2));
-                    stops.add(x.get(0));
+            csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\stop_times.txt");
+            first = true;
+            String trip_id;
+            while (csv.readNextLine()) {
+                if (first) {
+                    first = false;
+                    continue;
                 }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+                trip_id = csv.getItem(0);
+                if(trips.contains(trip_id)){
+                    StopTimes st = new StopTimes(trip_id, csv.getItem(1), csv.getItem(2), csv.getItem(3), Integer.parseInt(csv.getItem(4)));
+                    st.tripId = trip_id;
+                    stopTimes.add(st);
+                }
+            }
 
 
             csv = new CSVParser("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\transfers.txt");
@@ -113,7 +99,7 @@ public void sequential(String gtfsFeed) {
             }
 
 
-        try(Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Documents\\TransferPatterns2.txt"))){
+            try(Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Documents\\TransferPatterns2.txt"))){
                 lines.parallel().map(line -> Arrays.asList(line.split("-"))).forEach( x ->{
                     TransferPattern p = new TransferPattern(x.get(0), x.get(1));
                     if(transferPatterns.containsKey(p.startStation)){
@@ -124,7 +110,29 @@ public void sequential(String gtfsFeed) {
                         transferPatterns.put(p.startStation, pattern);
                     }
                 });
+            }
+
+
+        try (Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\stops.txt"))) {
+            lines.parallel().map(line -> Arrays.asList(line.split(","))).skip(1).forEach(x->{
+                if(gtfsFeed.contains("Iceland") ){
+                    stopNames.put(x.get(0).replace("\"", ""), x.get(1).replace("\"", ""));
+                    //stops.add(x.get(0).replace("\"", ""));
+                    stop s = new stop(x.get(0), x.get(2), x.get(3), x.get(4));
+                    stops.add(s);
+                }else{
+                    stopNames.put(x.get(0), x.get(2));
+                    //stops.add(x.get(0));
+                    stop s = new stop(x.get(0), x.get(2), x.get(4), x.get(5));
+                    stops.add(s);
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+
+
 
 
 

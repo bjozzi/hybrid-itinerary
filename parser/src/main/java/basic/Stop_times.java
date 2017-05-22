@@ -21,5 +21,15 @@ public class Stop_times {
         this.pickup_type = pickup_type;
         this.drop_off_type = drop_off_type;
     }
+
+    public Stop_times(String trip_id, String arrival_time, String departure_time, String stop_id) {
+
+        String[] arrivalTime = arrival_time.split(":");
+        String[] departureTime = departure_time.split(":");
+        this.arrival_time = Integer.parseInt(arrivalTime[0])*60 + Integer.parseInt(arrivalTime[1]) + Integer.parseInt(arrivalTime[2])/60;
+        this.departure_time = Integer.parseInt(departureTime[0])*60 + Integer.parseInt(departureTime[1]) + Integer.parseInt(departureTime[2])/60;
+        this.trip_id = trip_id;
+        this.stop_id = stop_id;
+    }
 }
 

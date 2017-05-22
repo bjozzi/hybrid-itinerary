@@ -8,7 +8,6 @@ import TimeDependent.TDDijkstra;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -18,17 +17,21 @@ import java.util.stream.Stream;
 
 public class Main {
 
+    public List<stop> Stops = new ArrayList<>();
+    private List<Transfer> Transfers = new ArrayList<>();
+    private Map<String, List<Stop_times>> StopTimes = new HashMap<>();
+    public Map<String, String> stopNames = new ConcurrentHashMap<>();
+    public TDDGraph g = new TDDGraph();
+    public TDDGraph gReversed = new TDDGraph();
 
-    public static void main(String[] args) {
-        String path = "D:\\ITU\\4. semestris\\Final Thesis\\gtfs\\";
+
+    public void main(String path) {
+        //path = "D:\\ITU\\4. semestris\\Final Thesis\\gtfs\\";
         CSVParser csv = null;
-        List<stop> Stops = new ArrayList<>();
-        List<Transfer> Transfers = new ArrayList<>();
-        Map<String, List<Stop_times>> StopTimes = new HashMap<>();
         int number = 0;
         boolean first = true;
         try {
-            csv = new CSVParser(path + "stops.txt");
+            /*csv = new CSVParser(path + "stops.txt");
 
             while (csv.readNextLine()) {
                 if (first) {
@@ -37,7 +40,8 @@ public class Main {
                 }
                 stop s = new stop(csv.getItem(0), csv.getItem(1), csv.getItem(2), csv.getItem(3), csv.getItem(4), csv.getItem(5), csv.getItem(6), csv.getItem(7));
                 Stops.add(s);
-            }
+            }*/
+
             csv = new CSVParser(path + "transfers.txt");
             first = true;
             while (csv.readNextLine()) {
@@ -57,31 +61,27 @@ public class Main {
                     continue;
                 }
                 trip_id = csv.getItem(0);
-                Stop_times st = new Stop_times(csv.getItem(0), csv.getItem(1), csv.getItem(2), csv.getItem(3), Integer.parseInt(csv.getItem(4)), Integer.parseInt(csv.getItem(5)), Integer.parseInt(csv.getItem(6)), csv.getItem(7));
+                Stop_times st = new Stop_times(csv.getItem(0), csv.getItem(1), csv.getItem(2), csv.getItem(3));
                 if (!StopTimes.containsKey(trip_id))
                     StopTimes.put(trip_id, new ArrayList<Stop_times>());
                 if (!StopTimes.get(trip_id).contains(st.stop_id))
                     StopTimes.get(trip_id).add(st);
             }
 
-            Map<String, String> stopNames = new ConcurrentHashMap<>();
-            try (Stream<String> lines = Files.lines(Paths.get("D:\\ITU\\4. semestris\\Final Thesis\\gtfs\\stops.txt"))) {
+           /* try (Stream<String> lines = Files.lines(Paths.get("D:\\ITU\\4. semestris\\Final Thesis\\gtfs\\stops.txt"))) {
                 lines.parallel().map(line -> Arrays.asList(line.split(","))).skip(1).forEach(x -> stopNames.put(x.get(0), x.get(2)));
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+            }*/
             //  BasicDijkstra(Stops, Transfers, StopTimes);
-            TDDDijkstra(Stops, Transfers, StopTimes, stopNames);
+            //TDDDijkstra(Stops, Transfers, StopTimes, stopNames);
             System.out.println("Done with everything");
-            System.exit(0);
         } catch (EOFException e1) {
             e1.printStackTrace();
         } catch (FileNotFoundException e1) {
             e1.printStackTrace();
         } catch (IOException e1) {
             e1.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
         }
     }
 
@@ -120,13 +120,12 @@ public class Main {
         System.out.println(dk + " " + d.shortestPathToString("000000004030", "000000002613"));
     }
 
-    public static void TDDDijkstra(List<stop> Stops, List<Transfer> Transfers, Map<String, List<Stop_times>> StopTimes, Map<String, String> stopNames) throws ParseException {
-        TDDGraph g = new TDDGraph();
+    public void createGraph(){
 
         for (stop s : Stops) {
-            float lat = Float.parseFloat(s.stop_lat);
-            float lon = Float.parseFloat(s.stop_lon);
-            g.createNode(s.stop_id, lat, lon);
+            //float lat = Float.parseFloat(s.stop_lat);
+            //float lon = Float.parseFloat(s.stop_lon);
+            g.createNode(s.stop_id, 0, 0);
         }
 
         for (Transfer t : Transfers) {
@@ -146,21 +145,15 @@ public class Main {
                 g.addEdge(st_from.stop_id, st_to.stop_id, timeBetween, dateTimeFrom, st_from.trip_id);
             }
         }
+    }
 
-        TDDijkstra d = new TDDijkstra(g);
-        Date TimeNow = new java.util.Date();
-        double timeInMinutes = TimeInMinutes(TimeNow);
-        String startNode = "000008600858";
-        String targetNode = "000008600512";
-        Double dk = d.computeShortestPath(startNode, targetNode, timeInMinutes);
-        System.out.println(dk);
-        System.out.println(d.shortestPathName(startNode, targetNode, stopNames));
+    public void reverseGraph(){
+        gReversed.nodes = new HashMap<>(g.nodes);
         int TaskCount = 10;
         ExecutorService executor = Executors.newFixedThreadPool(TaskCount);
         List<Future<?>> futures = new ArrayList<Future<?>>();
         Map<String, List<TDArc>> adjacentArcs = g.getadjacentArcs();
         Map<String, List<TDArc>> switchedArcs = new HashMap<>();
-        List<Map<String, ActiveNode>> trees = new ArrayList<>();
         int sizeOfDirChange = adjacentArcs.size();
         Object _lock = new Object();
         try {
@@ -197,10 +190,29 @@ public class Main {
             for (Future<?> future : futures) {
                 future.get();
             }
-            g.setAdjacentArcs(switchedArcs);
+            gReversed.setAdjacentArcs(switchedArcs);
+        } catch (InterruptedException e1) {
+            e1.printStackTrace();
+        } catch (ExecutionException e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    public List<Map<String, ActiveNode>> ISPT(String startNode, String targetNode, double startTime, double arrivalTime) throws ParseException {
+
+
+        TDDijkstra d = new TDDijkstra(gReversed);
+        //System.out.println(dk);
+        //System.out.println(d.shortestPathName(startNode, targetNode, stopNames));
+        int TaskCount = 10;
+        ExecutorService executor = Executors.newFixedThreadPool(TaskCount);
+        List<Future<?>> futures = new ArrayList<Future<?>>();
+        List<Map<String, ActiveNode>> trees = new ArrayList<>();
+        Object _lock = new Object();
+        try{
             futures = new ArrayList<Future<?>>();
             int minutes = 30;
-            double time = dk;
+            double time = arrivalTime;
             for (int i = 0; i < TaskCount; i++) {
 
                 final int from = minutes / TaskCount * i;
@@ -211,20 +223,24 @@ public class Main {
                     final String nodeId = targetNode;
                     for (double k = time + from; k < time + to; k++)
                         synchronized (_lock) {
-                            Map<String, ActiveNode> path = d.computeShortestPathTree(nodeId, k, timeInMinutes);
+                            Map<String, ActiveNode> path = d.computeShortestPathTree(nodeId, k, startTime);
                             trees.add(path);
                         }
 
                 }));
             }
             for (Future<?> future : futures) {
-                future.get();
+                try {
+                    future.get();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
             }
             //   Map<String, ActiveNode> path = d.computeShortestPathTree(targetNode, dk, timeInMinutes);
             List<Map<String, ActiveNode>> reduced = TreesContainingStartStation(trees, startNode);
+            return reduced;
 
-
-            System.out.println(shortestPathName(targetNode, startNode, reduced.get(0), stopNames));
+            /*System.out.println(shortestPathName(targetNode, startNode, reduced.get(0), stopNames));
 
             PrintWriter writer = new PrintWriter("trees.txt", "UTF-8");
 
@@ -234,14 +250,11 @@ public class Main {
                 writer.println("------------------------");
             }
             writer.close();
-            System.out.println(TimeInMinutes(TimeNow));
-        } catch (InterruptedException e) {
+            System.out.println(TimeInMinutes(TimeNow));*/
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            // do something
         }
+        return null;
     }
 
     public static String shortestPathName(String startNodeId, String targetNodeId, Map<String, ActiveNode> parents, Map<String, String> stopNames) {

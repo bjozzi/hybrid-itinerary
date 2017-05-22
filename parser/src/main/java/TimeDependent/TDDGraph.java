@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  */
 public class TDDGraph {
 
-    private Map<String, Node> nodes;
+    public Map<String, Node> nodes;
     private Map<String, List<TDArc>> adjacentArcs;
     private int TransferTime = 3;
 
@@ -41,11 +41,21 @@ public class TDDGraph {
     }
 
     public List<TDArc> getadjacentArc(String nodeID, double timeNow) {
-        List<TDArc> adjacentLaterArcs = adjacentArcs.get(nodeID).stream().filter(x -> x.departureTime.values().stream().anyMatch(y -> y >= timeNow)).collect(Collectors.toList());
+        List<TDArc> adjacentLaterArcs = null;
+        try{
+            adjacentLaterArcs = adjacentArcs.get(nodeID).stream().filter(x -> x.departureTime.values().stream().anyMatch(y -> y >= timeNow)).collect(Collectors.toList());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return adjacentLaterArcs;
     }
     public List<TDArc> getadjacentArcBack(String nodeID, double timeNow) {
-        List<TDArc> adjacentLaterArcs = adjacentArcs.get(nodeID).stream().filter(x -> x.departureTime.values().stream().anyMatch(y -> y <= timeNow)).collect(Collectors.toList());
+        List<TDArc> adjacentLaterArcs = null;
+        try{
+            adjacentLaterArcs = adjacentArcs.get(nodeID).stream().filter(x -> x.departureTime.values().stream().anyMatch(y -> y <= timeNow)).collect(Collectors.toList());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return adjacentLaterArcs;
     }
 

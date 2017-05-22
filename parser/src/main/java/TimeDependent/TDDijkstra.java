@@ -95,14 +95,11 @@ public class TDDijkstra {
             }
 
             // Discover all adjacent nodes
-            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId(), currentNode.getDist());
+            nodeAdjacentArcs = this.graph.getadjacentArc(currentNode.getId());
             if (nodeAdjacentArcs == null)
                 continue;
             for (int i = 0; i < nodeAdjacentArcs.size(); i++) {
                 TDArc arc = nodeAdjacentArcs.get(i);
-                if (arc.getHeadNodeID().equals(startNodeId)) {
-                    String x = "";
-                }
                 Map.Entry<String, Double> depTime = arc.GetClosestConnection(currentNode.getDist(), currentNode.getTrip_id());
                 if (depTime == null)
                     continue;

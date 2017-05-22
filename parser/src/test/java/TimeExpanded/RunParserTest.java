@@ -59,9 +59,9 @@ public class RunParserTest {
 
     @Test
     public void DenmarkTestShortestPath() throws Exception {
-        String stopId = "000008600858";
+        String stopId = "000000007002";
         String gtfsFeed = "gtfs";
-        String targetNodeId = "000008600620G";
+        String targetNodeId = "000000001357";
         shortestPathVanilla(stopId, gtfsFeed, targetNodeId);
     }
     @Test
@@ -78,9 +78,9 @@ public class RunParserTest {
         String stopId = "90000317";
         String gtfsFeed = "gtfsIceland";
         String targetNodeId = "14001661";//"90000295";
-        //shortestPathVanilla(stopId, gtfsFeed, targetNodeId);
+        shortestPathVanilla(stopId, gtfsFeed, targetNodeId);
         //transferPatterns(stopId, gtfsFeed, targetNodeId);
-        shortestPathTp(stopId, gtfsFeed,targetNodeId);
+        //shortestPathTp(stopId, gtfsFeed,targetNodeId);
     }
 
     private void shortestPathTp(String stopId, String gtfsFeed, String targetStopId) {
