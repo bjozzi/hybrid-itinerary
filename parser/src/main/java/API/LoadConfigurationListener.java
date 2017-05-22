@@ -20,6 +20,7 @@ public class LoadConfigurationListener implements ServletContextListener {
         context.setAttribute("graph", r.g);
         context.setAttribute("nodeOrders", r.nodeOrders);
         context.setAttribute("stopNames", r.stopNames);
+        context.setAttribute("transferPatterns", r.transferPatterns);
     }
 
     @Override
