@@ -1,6 +1,7 @@
 package TD;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Karlis on 2017.05.18..
@@ -46,6 +47,7 @@ public class TDArc {
             return null;
         }
     }
+
     public Map.Entry<Double, List<String>> getAccessTimeBack(double TimeNow) {
         try {
             if (allTimes.stream().allMatch(x -> x == -1)) {
@@ -77,7 +79,13 @@ public class TDArc {
                     else
                         return false;
                 }).min(Double::compareTo).get();
-                return accessTime.entrySet().stream().filter(x -> x.getKey() == time).iterator().next();
+                Map.Entry<Double, List<String>> val = accessTime.entrySet().stream().filter(x -> x.getKey() == time).iterator().next();
+                if (trips.size() > 0 && !trips.stream().allMatch(x -> x.equals("Transfer"))) {
+                    List<String> tr = val.getValue().stream().filter(x->trips.contains(x)).collect(Collectors.toList());
+                    if (tr.size() > 0)
+                        val.setValue(tr);
+                }
+                return val;
             }
         } catch (Exception e) {
             return null;
@@ -102,7 +110,13 @@ public class TDArc {
                     else
                         return false;
                 }).max(Double::compareTo).get();
-                return accessTime.entrySet().stream().filter(x -> x.getKey() == time).iterator().next();
+                Map.Entry<Double, List<String>> val =  accessTime.entrySet().stream().filter(x -> x.getKey() == time).iterator().next();
+                if (trips.size() > 0 && !trips.stream().allMatch(x -> x.equals("Transfer"))) {
+                    List<String> tr = val.getValue().stream().filter(x->trips.contains(x)).collect(Collectors.toList());
+                    if (tr.size() > 0)
+                        val.setValue(tr);
+                }
+                return val;
             }
         } catch (Exception e) {
             return null;
