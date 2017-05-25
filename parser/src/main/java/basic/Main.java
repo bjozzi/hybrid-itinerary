@@ -3,9 +3,6 @@ package basic;
 
 import TD.TDActiveNode;
 import TD.TDGraph;
-import TimeDependent.TDArc;
-import TimeDependent.TDDGraph;
-import TimeDependent.TDDijkstra;
 
 import java.io.EOFException;
 import java.io.FileNotFoundException;
@@ -23,8 +20,8 @@ public class Main {
     private List<Transfer> Transfers = new ArrayList<>();
     private Map<String, List<Stop_times>> StopTimes = new HashMap<>();
     public Map<String, String> stopNames = new ConcurrentHashMap<>();
-    public TDDGraph g = new TDDGraph();
-    public TDDGraph gReversed = new TDDGraph();
+    public TDGraph g = new TDGraph();
+    public TDGraph gReversed = new TDGraph();
 
 
     public void main(String path) {
@@ -162,27 +159,18 @@ public class Main {
             HashMap<String, TDActiveNode> parents = g.TimeDependentDijkstra(startNode, targetNode, timeInMinutes);
             double endTime = parents.get(targetNode).distance;
             List<Map<String, TDActiveNode>> trees = new ArrayList<>();
-            futures = new ArrayList<Future<?>>();
             int minutes = 30;
             double time = endTime;
-            for (int i = 0; i < TaskCount; i++) {
+            double toTime = endTime+minutes;
 
-                final int from = minutes / TaskCount * i;
-                final int to = (i + 1 >= minutes) ? minutes : minutes / TaskCount * (i + 1);
 
-                futures.add(executor.submit(() -> {
-
-                    final String nodeId = targetNode;
-                    for (double k = time + from; k < time + to; k++)
-                        synchronized (_lock) {
-                            HashMap<String, TDActiveNode> par = reversedGraph.ComputeISPT(targetNode, k, timeInMinutes);
-                            trees.add(par);
-                        }
-                }));
+            for (double k = time ; k < toTime; k++){
+                HashMap<String, TDActiveNode> par = reversedGraph.ComputeISPT(targetNode, k, timeInMinutes);
+                trees.add(par);
             }
-            for (Future<?> future : futures) {
-                future.get();
-            }
+
+
+
             List<Map<String, TDActiveNode>> reduced = TreesContainingStartStation(trees, startNode);
             if (reduced.size() > 0) {
                 //send the reduced tree
@@ -231,16 +219,13 @@ public class Main {
 
     public void createGraph(){
 
+        //TDGraph g = new TDGraph();
+
         for (stop s : Stops) {
-            //float lat = Float.parseFloat(s.stop_lat);
-            //float lon = Float.parseFloat(s.stop_lon);
-            g.createNode(s.stop_id, 0, 0);
+            g.createNode(s.stop_id, s.stop_name, s.stop_lat, s.stop_lon);
         }
 
-        for (Transfer t : Transfers) {
-            g.addEdge(t.from_stop_id, t.to_stop_id, Double.parseDouble(t.min_transfer_time) / 60, -1, "Transfer");
-            g.addEdge(t.to_stop_id, t.from_stop_id, Double.parseDouble(t.min_transfer_time) / 60, -1, "Transfer");
-        }
+
         for (List<Stop_times> ss : StopTimes.values()) {
             for (int j = 0; j < ss.size(); j++) {
                 if (j + 1 == ss.size())
@@ -248,21 +233,27 @@ public class Main {
 
                 Stop_times st_from = ss.get(j);
                 Stop_times st_to = ss.get(j + 1);
+
                 double dateTimeFrom = st_from.departure_time;
                 double dateTimeTo = st_to.arrival_time;
                 double timeBetween = dateTimeTo - dateTimeFrom;
-                g.addEdge(st_from.stop_id, st_to.stop_id, timeBetween, dateTimeFrom, st_from.trip_id);
+                g.addArc(st_from.stop_id, st_to.stop_id, timeBetween, dateTimeFrom, st_from.trip_id);
             }
+        }
+        for (Transfer t : Transfers) {
+            g.addArc(t.from_stop_id, t.to_stop_id, Double.parseDouble(t.min_transfer_time) / 60, -1, "Transfer");
+            g.addArc(t.to_stop_id, t.from_stop_id, Double.parseDouble(t.min_transfer_time) / 60, -1, "Transfer");
         }
     }
 
     public void reverseGraph(){
-        gReversed.nodes = new HashMap<>(g.nodes);
+
         int TaskCount = 10;
+        //TDGraph reversedGraph = new TDGraph();
+        this.gReversed.setNodes(g.getNodes());
         ExecutorService executor = Executors.newFixedThreadPool(TaskCount);
         List<Future<?>> futures = new ArrayList<Future<?>>();
-        Map<String, List<TDArc>> adjacentArcs = g.getadjacentArcs();
-        Map<String, List<TDArc>> switchedArcs = new HashMap<>();
+        Map<String, List<TD.TDArc>> adjacentArcs = g.getAdjacentArcs();
         int sizeOfDirChange = adjacentArcs.size();
         Object _lock = new Object();
         try {
@@ -276,20 +267,13 @@ public class Main {
                 futures.add(executor.submit(() -> {
                     for (int j = from; j < to; j++) {
                         String fromNode = keys.get(j);
-                        List<TDArc> ListOfAdjacentArcs = adjacentArcs.get(fromNode);
-                        for (TDArc arc : ListOfAdjacentArcs) {
+                        List<TD.TDArc> ListOfAdjacentArcs = adjacentArcs.get(fromNode);
+                        for (TD.TDArc arc : ListOfAdjacentArcs) {
                             synchronized (_lock) {
-                                Map<String, Double> departures = new HashMap<>();
-                                for (Map.Entry<String, Double> depTimes : arc.departureTime.entrySet()) {
-                                    departures.put(depTimes.getKey(), depTimes.getValue() + arc.getCost());
-                                }
-                                TDArc tdAr = TDArc.createArc(fromNode, arc.getCost(), departures);
-                                if (switchedArcs.containsKey(arc.getHeadNodeID())) {
-                                    switchedArcs.get(arc.getHeadNodeID()).add(tdAr);
-                                } else {
-                                    List<TDArc> adjArcs = new ArrayList<>();
-                                    adjArcs.add(tdAr);
-                                    switchedArcs.put(arc.getHeadNodeID(), adjArcs);
+                                for (Map.Entry<Double, List<String>> depTimes : arc.accessTime.entrySet()) {
+                                    for (String trip_id : depTimes.getValue()) {
+                                        this.gReversed.addArc(arc.toID, fromNode, arc.cost, (depTimes.getKey() + arc.cost), trip_id);
+                                    }
                                 }
                             }
                         }
@@ -299,27 +283,26 @@ public class Main {
             for (Future<?> future : futures) {
                 future.get();
             }
-            gReversed.setAdjacentArcs(switchedArcs);
-        } catch (InterruptedException e1) {
-            e1.printStackTrace();
-        } catch (ExecutionException e1) {
-            e1.printStackTrace();
+        }catch (Exception e ){
+            e.printStackTrace();
         }
+
+
     }
 
 
 
-    public static String shortestPathName(String startNodeId, String targetNodeId, Map<String, ActiveNode> parents, Map<String, String> stopNames) {
+    public static String shortestPathName(String startNodeId, String targetNodeId, Map<String, TDActiveNode> parents, Map<String, String> stopNames) {
 
         String pathName = "";
         String currentNodeId;
 
         currentNodeId = targetNodeId;
 
-        pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getArrivalTime());
+        pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).distance);
         while (currentNodeId != startNodeId) {
-            currentNodeId = parents.get(currentNodeId).getParent();
-            pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).getArrivalTime()) + "->" + pathName;
+            currentNodeId = parents.get(currentNodeId).parentID;
+            pathName = stopNames.get(currentNodeId) + "@" + Main.MinutesToTime(parents.get(currentNodeId).distance) + "->" + pathName;
             if (currentNodeId == null)
                 break;
         }

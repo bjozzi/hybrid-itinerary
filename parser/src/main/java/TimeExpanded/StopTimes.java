@@ -16,7 +16,7 @@ public class StopTimes {
         String[] arrivalTime = arrival_time.split(":");
         String[] departureTime = departure_time.split(":");
         this.arrival_time = Integer.parseInt(arrivalTime[0])*60 + Integer.parseInt(arrivalTime[1]) + Integer.parseInt(arrivalTime[2])/60;
-        this.departure_time = Integer.parseInt(departureTime[0])*60 + Integer.parseInt(departureTime[1]) + Integer.parseInt(departureTime[2])/60;
+        this.departure_time = Integer.parseInt(departureTime[0])*60 + Integer.parseInt(departureTime[1]) +Integer.parseInt(departureTime[2])/60;
         this.tripId = tripId;
         this.stopId = stop_id;
         this.stop_sequence = stop_sequence;

@@ -122,6 +122,22 @@ public class TDGraph {
         return parents;
     }
 
+
+    public String shortestPath(String startNode, String targetNode, Map<String, TDActiveNode> parents){
+        String parentNode = targetNode;
+        String path = "";
+        double startTime = parents.get(startNode).time;
+        path = Nodes.get(parentNode).Name + "@" + Main.MinutesToTime(startTime - parents.get(parentNode).distance);
+
+        while (!parentNode.equals(startNode)) {
+            parentNode = parents.get(parentNode).parentID;
+            if (parentNode.equals(""))
+                break;
+            path = Nodes.get(parentNode).Name + "@" + Main.MinutesToTime(startTime - parents.get(parentNode).distance) + ">" + path;
+        }
+        return  path;
+    }
+
     public HashMap<String, TDActiveNode> ComputeISPT(String startNode, double StartTime, double endTime) {
         PriorityQueue<TDActiveNode> activeNodes = new PriorityQueue<>(100);
         HashMap<String, TDActiveNode> parents = new HashMap<>();
@@ -144,7 +160,7 @@ public class TDGraph {
             if (adjac == null)
                 continue;
             for (TDArc arc : adjac) {
-                Map.Entry<Double, List<String>> movingaround = arc.getAccessTimeBack(currentNode.time);//, currentNode.trips);
+                Map.Entry<Double, List<String>> movingaround = arc.getAccessTimeBack(currentNode.time, currentNode.trips);
                 if (movingaround == null)
                     continue;
                 double time = movingaround.getKey();

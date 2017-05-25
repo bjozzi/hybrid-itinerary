@@ -12,17 +12,20 @@
   </head>
   <body>
 
-    <div ng-app="myApp" ng-controller="myCtrl">
+    <div ng-app="myApp" ng-controller="myCtrl" ng-cloak >
         <h1 ng-click="changeName()">{{firstname}}</h1>
         <select ng-model="selectedStation" ng-options="x.name for x in stations">
         </select>
+        <div ng-init="treez"    >
         <p>{{selectedStation}}</p>
-        <p>{{path}}</p>
+        <p>{{treez}}</p>
+        <p>{{tp}}</p>
+        </div>
     </div>
 
     <script>
     var app = angular.module('myApp', []);
-    app.controller('myCtrl', function($scope, $http) {
+    app.controller('myCtrl', function($scope, $http, $rootScope) {
         $scope.firstname = "John";
         $scope.changeName = function() {
             $scope.firstname = "Nelly";
@@ -32,7 +35,14 @@
         $http.get(trip)
         .then(function(response) {
             console.log(response);
-            $scope.path = String.fromCharCode.apply(null, new Uint16Array(response.data));
+            $scope.treez = response.data;
+        });
+
+        var trip2 = "http://localhost:8080/parser_war_exploded/helloworld/tp?start=90000317&target=90000295";
+        $http.get(trip2)
+        .then(function(response) {
+            console.log(response);
+            $scope.tp = response.data;
         });
 
         $scope.stations = stopNames;

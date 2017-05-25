@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -75,9 +76,9 @@ public class RunParserTest {
     }
     @Test
     public void IcelandTestShortestPath() throws Exception {
-        String stopId = "90000317";
+        String stopId = "90000018";
         String gtfsFeed = "gtfsIceland";
-        String targetNodeId = "14001661";//"90000295";
+        String targetNodeId = "90000295";//"90000295";
         shortestPathVanilla(stopId, gtfsFeed, targetNodeId);
         //transferPatterns(stopId, gtfsFeed, targetNodeId);
         //shortestPathTp(stopId, gtfsFeed,targetNodeId);
@@ -156,7 +157,7 @@ public class RunParserTest {
             }
         }
 
-        Path file = Paths.get("C:\\Users\\bjozz\\Documents\\TransferPatterns2.txt");
+        Path file = Paths.get("C:\\Users\\bjozz\\Documents\\TransferPatterns25-5.txt");
 
         //Use try-with-resource to get auto-closeable writer instance
         try (BufferedWriter writer = Files.newBufferedWriter(file))
@@ -249,15 +250,20 @@ public class RunParserTest {
         g = r.g;
         TEDijkstra d = new TEDijkstra(g);
 
-        ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) r.nodeOrders.get(stopId).stream().parallel().filter(x->x.type == 2 ).sorted(NOcomparator).collect(toList());
+        int i = 0;
+        ArrayList<NodeOrder> se = (ArrayList<NodeOrder>) r.nodeOrders.get(stopId).stream().parallel().filter(x->x.type == 3 ).filter(x->x.minute >= TimeInMinutes(new Date())).sorted(NOcomparator).collect(toList());
         for(NodeOrder n : se){
             String nodeId = n.nodeId;
             System.out.println(nodeId);
             String dk = d.computeShortestPath(nodeId, stopId, targetNodeId);
             System.out.println(dk);
             String endNodeId = dk;
-            System.out.println(g.getNode(nodeId).time);
-            System.out.println(g.getNode(endNodeId).time);
+            try{
+                System.out.println(g.getNode(nodeId).time);
+                System.out.println(g.getNode(endNodeId).time);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
             System.out.println(Main.MinutesToTime(g.getNode(nodeId).time));
             System.out.println(Main.MinutesToTime(g.getNode(endNodeId).time));
             System.out.println(g.getNode(endNodeId).time - g.getNode(nodeId).time);
@@ -270,6 +276,9 @@ public class RunParserTest {
             for(ArrayList<String> p : path){
                 System.out.println(path);
             }
+
+            i++;
+            if(i>25) break;
         }
     }
 

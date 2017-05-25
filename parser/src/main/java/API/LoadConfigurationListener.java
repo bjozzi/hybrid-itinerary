@@ -1,6 +1,5 @@
 package API;
 
-import TimeDependent.TDDijkstra;
 import TimeExpanded.RunParser;
 import TimeExpanded.TEGraph;
 import basic.Main;
@@ -16,7 +15,7 @@ public class LoadConfigurationListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         ServletContext context = servletContextEvent.getServletContext();
-        String feed = "gtfsIceland";
+        String feed = "gtfsDublin";
 
 
 
@@ -36,10 +35,9 @@ public class LoadConfigurationListener implements ServletContextListener {
         tdd.main("C:\\Users\\bjozz\\Desktop\\"+feed+"\\");
         tdd.createGraph();
         tdd.reverseGraph();
-        TDDijkstra d = new TDDijkstra(tdd.g);
-        TDDijkstra dReversed = new TDDijkstra(tdd.gReversed);
 
-        context.setAttribute("tddGraph", d);
+        context.setAttribute("tddGraph", tdd.g);
+        context.setAttribute("reversedGraph", tdd.gReversed);
         context.setAttribute("stopNames", tdd.stopNames);
         context.setAttribute("mainTD", tdd);
 

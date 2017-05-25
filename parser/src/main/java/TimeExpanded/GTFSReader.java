@@ -24,10 +24,10 @@ public class GTFSReader {
     private  Set weekday = Collections.synchronizedSet(new HashSet<String>());
     private  Set saturday = Collections.synchronizedSet(new HashSet<String>());
     private  Set sunday = Collections.synchronizedSet(new HashSet<String>());
-    public  List<StopTimes> stopTimes = Collections.synchronizedList(new ArrayList<StopTimes>());
-    public  Map<String, ArrayList<Transfer>> transfers = new ConcurrentHashMap<>();
-    public  Map<String, String> stopNames = new ConcurrentHashMap<>();
-    public List<stop> stops = Collections.synchronizedList(new ArrayList<stop>());
+    public  List<StopTimes> stopTimes = new ArrayList<StopTimes>();
+    public  Map<String, ArrayList<Transfer>> transfers = new HashMap<>();
+    public  Map<String, String> stopNames = new HashMap<>();
+    public List<stop> stops = new ArrayList<stop>();
     public HashMap<String, List<TransferPattern>> transferPatterns = new HashMap<>();
 
 
@@ -100,7 +100,7 @@ public void sequential(String gtfsFeed) {
 
 
             try(Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Documents\\TransferPatterns2.txt"))){
-                lines.parallel().map(line -> Arrays.asList(line.split("-"))).forEach( x ->{
+                lines.map(line -> Arrays.asList(line.split("-"))).forEach( x ->{
                     TransferPattern p = new TransferPattern(x.get(0), x.get(1));
                     if(transferPatterns.containsKey(p.startStation)){
                         transferPatterns.get(p.startStation).add(p);
@@ -114,11 +114,11 @@ public void sequential(String gtfsFeed) {
 
 
         try (Stream<String> lines = Files.lines(Paths.get("C:\\Users\\bjozz\\Desktop\\" + gtfsFeed + "\\stops.txt"))) {
-            lines.parallel().map(line -> Arrays.asList(line.split(","))).skip(1).forEach(x->{
-                if(gtfsFeed.contains("Iceland") ){
+            lines.map(line -> Arrays.asList(line.split(","))).skip(1).forEach(x->{
+                if(gtfsFeed.contains("Dublin") ){
                     stopNames.put(x.get(0).replace("\"", ""), x.get(1).replace("\"", ""));
                     //stops.add(x.get(0).replace("\"", ""));
-                    stop s = new stop(x.get(0), x.get(2), x.get(3), x.get(4));
+                    stop s = new stop(x.get(0).replace("\"", ""), x.get(1).replace("\"", ""), x.get(2).replace("\"", ""), x.get(3).replace("\"", ""));
                     stops.add(s);
                 }else{
                     stopNames.put(x.get(0), x.get(2));

@@ -54,7 +54,7 @@ public class RunParser {
             this.stopNames = reader.stopNames;
             this.stops = reader.stops;
             this.transferPatterns = reader.transferPatterns;
-
+            int edges = 0;
             if(gtfsFeed.contains("Iceland")){
 
             }
@@ -84,6 +84,7 @@ public class RunParser {
                     g.createNode(departureNodeId, st_from.stopId, dateTimeDeparture, 3, st_from.tripId);
                     g.addEdge(departureNodeId, arrivalNodeId, timeBetween, st_to.stopId);
                     g.addEdge(transferNodeId, departureNodeId, 0, st_from.stopId);
+                    edges += 2;
 
                     nodeOrder(st_to.stopId, dateTimeArrival, arrivalNodeId, 1);
                     nodeOrder(st_from.stopId, dateTimeDeparture, transferNodeId, 2);
@@ -103,6 +104,7 @@ public class RunParser {
                             g.createNode(arrivalNodeTransfer, t.to_stop_id, dateTimeArrival + t.transfer_time, 1, t.to_stop_id);
                             nodeOrder(t.to_stop_id, dateTimeArrival + t.transfer_time, arrivalNodeTransfer, 1);
                             g.addEdge(stationTransferNode, arrivalNodeTransfer, t.transfer_time, t.to_stop_id);
+                            edges++;
                             k++;
                         }
                     }
@@ -127,9 +129,11 @@ public class RunParser {
                                     NodeOrder nextNode = se.get(j);
                                     if(nextNode.type == 2){
                                         g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute+3, nextNode.stopId);
+                                        edges++;
                                     }
                                     if (nextNode.type == 3){
                                         g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);
+                                        edges++;
                                         break;
                                     }
                                 }
@@ -140,9 +144,11 @@ public class RunParser {
                                     NodeOrder nextNode = se.get(j);
                                     if(nextNode.type == 2){
                                         g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute+3, nextNode.stopId);
+                                        edges++;
                                     }
                                     if (nextNode.type == 3){
-                                        g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute, nextNode.stopId);
+                                        g.addEdge(earlier.nodeId, nextNode.nodeId, nextNode.minute - earlier.minute+3, nextNode.stopId);
+                                        edges++;
                                         break;
                                     }
                                 }
@@ -155,6 +161,7 @@ public class RunParser {
                         e.printStackTrace();
                     }
                 }
+            System.out.println("edges: " + edges);
         } catch (Exception e) {
             System.out.println(js);
             e.printStackTrace();

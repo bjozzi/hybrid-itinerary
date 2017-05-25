@@ -53,14 +53,15 @@ public class TEGraph  {
         TENode vnode = getNode(v);
 
         if(vnode.time - unode.time < 0){
-            System.out.println("add edge in TEGraph ERROR!");
+            System.out.println("add edge in TEGraph ERROR!" + vnode.time  + " - " + unode.time );
+        }else{
+            TEArc uarc = TEArc.createArc(v, cost, vStation);
+            addArc(u, uarc);
         }
         /*if(unode == null || vnode == null) {
             return;
         }*/
 
-        TEArc uarc = TEArc.createArc(v, cost, vStation);
-        addArc(u, uarc);
     }
     public int getNumNodes()
     {return getNodes().size();

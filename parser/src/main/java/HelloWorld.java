@@ -1,4 +1,5 @@
-import TimeDependent.TDDijkstra;
+import TD.TDActiveNode;
+import TD.TDGraph;
 import TimeExpanded.*;
 import basic.ActiveNode;
 import basic.Main;
@@ -15,10 +16,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.zip.GZIPOutputStream;
 
 import static TimeExpanded.RunParser.NOcomparator;
 import static TimeExpanded.RunParser.TimeInMinutes;
+import static basic.Main.TreesContainingStartStation;
 import static java.util.stream.Collectors.toList;
 
 // The Java class will be hosted at the URI path "/helloworld"
@@ -138,21 +143,49 @@ public class HelloWorld {
     @GET
     @Path("/tdd")
     // The Java method will produce content identified by the MIME Media type "text/plain"
-    //@Produces(MediaType.CHARSET_PARAMETER+ ";charset=utf-8")
+    @Produces(MediaType.APPLICATION_JSON+ ";charset=utf-8")
     public String timeDependent(@QueryParam("start") String startNode, @QueryParam("target") String targetNode, ContainerResponseContext responseContext) throws ParseException {
-        TDDijkstra d = (TDDijkstra) context.getAttribute("tddGraph");
+
+
+        TDGraph graph = (TDGraph) context.getAttribute("tddGraph");
+        TDGraph gReversed = (TDGraph) context.getAttribute("reversedGraph");
+
         Map<String, String> stopNames = (Map<String, String>) context.getAttribute("stopNames");
         Main tdd = (Main) context.getAttribute("mainTD");
         Date timeNow = new Date();
         double timeInMinutes = TimeInMinutes(timeNow);
-        Double arrivalTime = d.computeShortestPath(startNode, targetNode, timeInMinutes);
-
-
-        List<Map<String, ActiveNode>> reduced = tdd.ISPT(startNode, targetNode, timeInMinutes, arrivalTime);
-
         Map<String, Object> data = new HashMap<String, Object>();
-        data.put("tree", reduced);
-        data.put("path", d.shortestPathName(startNode, targetNode, stopNames));
+
+        try{
+
+        HashMap<String, TDActiveNode> parents = graph.TimeDependentDijkstra(startNode, targetNode, timeInMinutes);
+        double endTime = parents.get(targetNode).distance;
+        List<Map<String, TDActiveNode>> trees = new ArrayList<>();
+        List<Future<?>> futures = new ArrayList<Future<?>>();
+        int TaskCount = 10;
+        ExecutorService executor = Executors.newFixedThreadPool(TaskCount);
+        int minutes = 180;
+        double time = endTime;
+        double toTime = endTime+minutes;
+
+
+        for (double k = time ; k < toTime; k++){
+            HashMap<String, TDActiveNode> par = gReversed.ComputeISPT(targetNode, k, timeInMinutes);
+            trees.add(par);
+        }
+        List<Map<String, TDActiveNode>> reduced = Main.TreesContainingStartStation(trees, startNode);
+        /*if (reduced.size() > 0) {
+            for(int i = 0; i<reduced.size(); i++){
+                data.put(String.valueOf(i), gReversed.shortestPath(targetNode, startNode, reduced.get(i)));
+            }
+        }*/
+            data.put("reduced", reduced);
+            data.put("path",  Main.shortestPathName(startNode,targetNode,parents,stopNames) );
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
         //data.put("path", result);
 
         Gson gson = new GsonBuilder().create();
